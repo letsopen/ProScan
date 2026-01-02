@@ -3,7 +3,6 @@
 ## 概述
 
 本项目已重构为可插拔的扫码架构，支持多种扫码实现。当前支持：
-- **微信 OpenCV 二维码识别**（基于微信开源的二维码识别引擎）
 - **华为 HMS Core Scan Kit**（中国区推荐方案）
 - **ML Kit Barcode Scanning 独立版本**（不需要 Google Play Services）
 - **Google ML Kit Code Scanner**（需要 Google Play Services）
@@ -26,19 +25,6 @@
 - `onError(String error)`: 扫码失败
 
 ### 实现类
-
-#### `WeChatQRCodeScanner`
-- 基于微信开源的 OpenCV 二维码识别引擎
-- **⚠️ 当前状态：不可用**
-  - `org.opencv:opencv:4.9.0` 不包含 Android 子包
-  - 应用会自动跳过此功能，使用其他扫码方案
-- **优势**（如果可用）：
-  - **微信官方开源**，识别准确率高
-  - 使用 CNN 模型进行检测和超分辨率处理
-  - 支持模糊、倾斜、远距离二维码识别
-  - 完全离线工作，不依赖任何服务
-- **要求**：需要模型文件和 OpenCV Android SDK
-- **注意**：当前实现已简化为占位实现，`isAvailable()` 始终返回 `false`
 
 #### `HuaweiBarcodeScanner`
 - 基于华为 HMS Core Scan Kit
@@ -90,7 +76,7 @@
 ### 基本使用
 
 ```java
-// 自动选择可用的扫码器（智能选择：优先微信，然后华为，然后ML Kit独立版本，最后ZXing）
+// 自动选择可用的扫码器（智能选择：优先华为，然后ML Kit独立版本，最后ZXing）
 BarcodeScanner scanner = BarcodeScannerFactory.getAvailableScanner(this);
 
 // 启动扫码
@@ -115,11 +101,6 @@ scanner.startScan(this, new BarcodeScanner.ScanCallback() {
 ### 指定扫码实现
 
 ```java
-// 使用微信 OpenCV 二维码识别（推荐，识别准确率高）
-BarcodeScanner scanner = BarcodeScannerFactory.createScanner(
-    BarcodeScannerFactory.ScannerType.WECHAT_QRCODE
-);
-
 // 使用华为 Scan Kit（推荐，中国区设备）
 BarcodeScanner scanner = BarcodeScannerFactory.createScanner(
     BarcodeScannerFactory.ScannerType.HUAWEI_SCAN_KIT
@@ -196,21 +177,8 @@ dependencies {
     
     // 华为 HMS Core Scan Kit
     implementation 'com.huawei.hms:scan:2.12.0.300'
-    
-    // OpenCV（用于微信二维码识别）
-    implementation 'org.opencv:opencv-android:4.8.0'
 }
 ```
-
-**注意**：使用微信 OpenCV 二维码识别需要下载模型文件并放在 `app/src/main/assets/` 目录下：
-- `detect.prototxt` - 检测器模型配置文件
-- `detect.caffemodel` - 检测器模型文件
-- `sr.prototxt` - 超分辨率模型配置文件
-- `sr.caffemodel` - 超分辨率模型文件
-
-模型文件可以从以下位置获取：
-- OpenCV 官方仓库：https://github.com/opencv/opencv_contrib/tree/master/modules/wechat_qrcode
-- 或者从 OpenCV 官方下载页面获取
 
 ### AndroidManifest.xml
 
@@ -255,14 +223,7 @@ public class NewScanner implements BarcodeScanner {
 
 ## 选择建议
 
-### 推荐方案（按需求）
-
-#### 高准确率识别：微信 OpenCV 二维码识别
-- ✅ **微信官方开源**，识别准确率极高
-- ✅ 支持模糊、倾斜、远距离二维码
-- ✅ 完全离线工作
-- ⚠️ 需要模型文件（约几MB）
-- ⚠️ 首次加载需要初始化OpenCV
+### 推荐方案（按地区）
 
 #### 中国区：华为 Scan Kit
 - ✅ **专为中国市场优化**，在华为设备上性能优秀
@@ -294,11 +255,9 @@ public class NewScanner implements BarcodeScanner {
 
 ## 参考文档
 
-- [微信 OpenCV 二维码识别](https://github.com/opencv/opencv_contrib/tree/master/modules/wechat_qrcode)
 - [华为 HMS Core Scan Kit](https://developer.huawei.com/consumer/cn/doc/HMSCore-Guides/android-build-scan-capabilities-0000001050042010)
 - [ML Kit Barcode Scanning](https://developers.google.com/ml-kit/vision/barcode-scanning/android)
 - [Google ML Kit Code Scanner](https://developers.google.com/ml-kit/vision/barcode-scanning/code-scanner)
 - [ZXing Android Embedded](https://github.com/journeyapps/zxing-android-embedded)
 - [CameraX](https://developer.android.com/training/camerax)
-- [OpenCV Android](https://opencv.org/android/)
 
