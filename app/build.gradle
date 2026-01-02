@@ -7,7 +7,7 @@ android {
     
     defaultConfig {
         applicationId "com.example.proscan" // 可选：修改应用包名
-        minSdkVersion 23  // Google Code Scanner 要求最低 API 23
+        minSdkVersion 29  // 最低支持 Android 10 (API 29)
         targetSdkVersion 33
         versionCode 7
         versionName "2.4"  // 版本更新：集成微信 OpenCV 二维码识别（需要模型文件）
@@ -62,5 +62,7 @@ dependencies {
     implementation 'com.huawei.hms:scan:2.12.0.300'
     
     // OpenCV（用于微信二维码识别）
-    implementation 'org.opencv:opencv:4.9.0'
+    // 注意：org.opencv:opencv:4.9.0 不包含 Android 子包，微信 OpenCV 二维码识别功能当前不可用
+    // 如需使用，需要手动集成 OpenCV Android SDK 或使用 OpenCV Manager
+    // implementation 'org.opencv:opencv:4.9.0'  // 已注释，因为不包含 Android 类
 }

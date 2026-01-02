@@ -5,7 +5,6 @@ import android.app.Activity;
 import com.example.proscan.scanner.impl.GoogleCodeScanner;
 import com.example.proscan.scanner.impl.HuaweiBarcodeScanner;
 import com.example.proscan.scanner.impl.MlKitBarcodeScanner;
-import com.example.proscan.scanner.impl.WeChatQRCodeScanner;
 import com.example.proscan.scanner.impl.ZxingBarcodeScanner;
 
 /**
@@ -18,7 +17,6 @@ public class BarcodeScannerFactory {
      * 扫码实现类型
      */
     public enum ScannerType {
-        WECHAT_QRCODE,      // 微信 OpenCV 二维码识别
         HUAWEI_SCAN_KIT,    // 华为 HMS Core Scan Kit
         GOOGLE_ML_KIT,      // Google ML Kit Code Scanner（需要 Google Play Services）
         ML_KIT_STANDALONE,  // ML Kit Barcode Scanning 独立版本（不需要 Google Play Services）
@@ -46,8 +44,6 @@ public class BarcodeScannerFactory {
      */
     public static BarcodeScanner createScanner(ScannerType type) {
         switch (type) {
-            case WECHAT_QRCODE:
-                return new WeChatQRCodeScanner();
             case HUAWEI_SCAN_KIT:
                 return new HuaweiBarcodeScanner();
             case GOOGLE_ML_KIT:
@@ -62,17 +58,11 @@ public class BarcodeScannerFactory {
     }
     
     /**
-     * 获取可用的扫码器（智能选择：优先微信，然后华为，然后ML Kit独立版本，最后ZXing）
+     * 获取可用的扫码器（智能选择：优先华为，然后ML Kit独立版本，最后ZXing）
      * 注意：Google Code Scanner 需要 Google Play Services，所以不在自动选择列表中
      */
     public static BarcodeScanner getAvailableScanner(Activity activity) {
-        // 优先使用微信 OpenCV 二维码识别（如果模型文件存在）
-        WeChatQRCodeScanner weChatScanner = new WeChatQRCodeScanner();
-        if (weChatScanner.isAvailable(activity)) {
-            return weChatScanner;
-        }
-        
-        // 其次使用华为 Scan Kit（如果可用）
+        // 优先使用华为 Scan Kit（如果可用）
         HuaweiBarcodeScanner huaweiScanner = new HuaweiBarcodeScanner();
         if (huaweiScanner.isAvailable(activity)) {
             return huaweiScanner;
@@ -93,12 +83,6 @@ public class BarcodeScannerFactory {
      */
     public static String[] getAvailableScannerNames(Activity activity) {
         java.util.List<String> names = new java.util.ArrayList<>();
-        
-        // 微信 OpenCV 二维码识别
-        WeChatQRCodeScanner weChatScanner = new WeChatQRCodeScanner();
-        if (weChatScanner.isAvailable(activity)) {
-            names.add(weChatScanner.getName());
-        }
         
         // 华为 Scan Kit
         HuaweiBarcodeScanner huaweiScanner = new HuaweiBarcodeScanner();

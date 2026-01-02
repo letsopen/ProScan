@@ -29,13 +29,16 @@
 
 #### `WeChatQRCodeScanner`
 - 基于微信开源的 OpenCV 二维码识别引擎
-- **优势**：
+- **⚠️ 当前状态：不可用**
+  - `org.opencv:opencv:4.9.0` 不包含 Android 子包
+  - 应用会自动跳过此功能，使用其他扫码方案
+- **优势**（如果可用）：
   - **微信官方开源**，识别准确率高
   - 使用 CNN 模型进行检测和超分辨率处理
   - 支持模糊、倾斜、远距离二维码识别
   - 完全离线工作，不依赖任何服务
-- **要求**：需要模型文件（detect.prototxt, detect.caffemodel, sr.prototxt, sr.caffemodel）
-- **注意**：模型文件需要放在 `app/src/main/assets/` 目录下
+- **要求**：需要模型文件和 OpenCV Android SDK
+- **注意**：当前实现已简化为占位实现，`isAvailable()` 始终返回 `false`
 
 #### `HuaweiBarcodeScanner`
 - 基于华为 HMS Core Scan Kit
