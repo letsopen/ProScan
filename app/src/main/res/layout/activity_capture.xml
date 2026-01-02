@@ -9,13 +9,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- 半透明遮罩 -->
+    <!-- 半透明蒙板 -->
     <View
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#80000000" />
 
-    <!-- 取景框 -->
+    <!-- 全透明取景框(注意不要用颜色填充) -->
     <ImageView
         android:id="@+id/scan_frame"
         android:layout_width="250dp"

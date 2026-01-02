@@ -10,21 +10,11 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- 半透明遮罩 -->
-    <View
+    <!-- 自定义遮罩层和取景框 -->
+    <com.example.proscan.view.ViewfinderView
+        android:id="@+id/viewfinder_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#80000000" />
-
-    <!-- 取景框 -->
-    <ImageView
-        android:id="@+id/scan_frame"
-        android:layout_width="250dp"
-        android:layout_height="250dp"
-        android:layout_gravity="center"
-        android:src="@drawable/scan_frame"
-        android:visibility="visible"
-        tools:visibility="visible" />
+        android:layout_height="match_parent" />
 
     <!-- 提示文字 -->
     <TextView
@@ -32,7 +22,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginTop="280dp"
+        android:layout_marginTop="380dp"
         android:text="请将二维码放入框内"
         android:textColor="#FFFFFF"
         android:textSize="16sp" />

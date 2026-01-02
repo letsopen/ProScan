@@ -66,7 +66,6 @@ public class MlKitBarcodeScanner implements BarcodeScanner {
      */
     public static class MlKitScanActivity extends AppCompatActivity {
         private PreviewView previewView;
-        private ImageView scanFrame;
         private TextView scanText;
         private ProcessCameraProvider cameraProvider;
         private ExecutorService cameraExecutor;
@@ -83,7 +82,7 @@ public class MlKitBarcodeScanner implements BarcodeScanner {
             setContentView(R.layout.activity_mlkit_scan);
             
             previewView = findViewById(R.id.preview_view);
-            scanFrame = findViewById(R.id.scan_frame);
+            // scanFrame 已被自定义 View 替代，不再需要手动查找
             scanText = findViewById(R.id.scan_text);
             
             cameraExecutor = Executors.newSingleThreadExecutor();
