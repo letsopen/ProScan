@@ -126,9 +126,33 @@ public class MainActivity extends AppCompatActivity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 startScan();
             } else {
-                Toast.makeText(this, "需要相机权限才能扫码", Toast.LENGTH_SHORT).show();
+                // 如果用户拒绝了权限，并且勾选了"不再询问"（shouldShowRequestPermissionRationale返回false）
+                // 或者只是拒绝了（返回true，但这里我们统一处理，如果是false则引导去设置）
+                if (!ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
+                    showPermissionSettingsDialog();
+                } else {
+                    Toast.makeText(this, "需要相机权限才能扫码", Toast.LENGTH_SHORT).show();
+                }
             }
         }
+    }
+
+    private void showPermissionSettingsDialog() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("需要相机权限")
+                .setMessage("扫码功能需要访问相机。请在设置中开启相机权限。")
+                .setPositiveButton("去设置", (dialog, which) -> {
+                    try {
+                        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                        Uri uri = Uri.fromParts("package", getPackageName(), null);
+                        intent.setData(uri);
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     private void startScan() {
@@ -136,19 +160,29 @@ public class MainActivity extends AppCompatActivity {
             barcodeScanner.startScan(this, new BarcodeScanner.ScanCallback() {
                 @Override
                 public void onSuccess(String result) {
-                    editTextUrl.setText(result);
-                    dbHelper.addHistoryItem(result, "scan");
-                    Toast.makeText(MainActivity.this, "扫描成功", Toast.LENGTH_SHORT).show();
+                    runOnUiThread(() -> {
+                        if (result != null && !result.isEmpty()) {
+                            editTextUrl.setText(result);
+                            dbHelper.addHistoryItem(result, "scan");
+                            Toast.makeText(MainActivity.this, "扫描成功", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(MainActivity.this, "扫描结果为空", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 }
 
                 @Override
                 public void onCancel() {
-                    Toast.makeText(MainActivity.this, "扫描已取消", Toast.LENGTH_SHORT).show();
+                    runOnUiThread(() -> 
+                        Toast.makeText(MainActivity.this, "扫描已取消", Toast.LENGTH_SHORT).show()
+                    );
                 }
 
                 @Override
                 public void onError(String error) {
-                    Toast.makeText(MainActivity.this, "扫描失败: " + error, Toast.LENGTH_SHORT).show();
+                    runOnUiThread(() -> 
+                        Toast.makeText(MainActivity.this, "扫描失败: " + error, Toast.LENGTH_SHORT).show()
+                    );
                 }
             });
         }

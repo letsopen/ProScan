@@ -38,6 +38,7 @@
         <activity
             android:name=".scanner.impl.MlKitBarcodeScanner$MlKitScanActivity"
             android:screenOrientation="fullSensor"
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
             android:stateNotNeeded="true"
             android:theme="@style/zxing_CaptureTheme"
             android:windowSoftInputMode="stateAlwaysHidden"

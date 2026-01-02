@@ -227,6 +227,10 @@ public class MlKitBarcodeScanner implements BarcodeScanner {
             if (cameraProvider != null) {
                 cameraProvider.unbindAll();
             }
+            // Activity销毁时清除回调引用，防止内存泄漏
+            if (isFinishing()) {
+                MlKitBarcodeScannerHelper.clearCallback();
+            }
         }
         
         @Override
