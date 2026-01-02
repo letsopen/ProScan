@@ -3,11 +3,6 @@ package com.example.proscan.scanner.impl;
 import android.app.Activity;
 
 import com.example.proscan.scanner.BarcodeScanner;
-import com.google.android.gms.common.moduleinstall.ModuleInstall;
-import com.google.android.gms.common.moduleinstall.ModuleInstallClient;
-import com.google.android.gms.common.moduleinstall.ModuleInstallRequest;
-import com.google.android.gms.common.moduleinstall.ModuleInstallResponse;
-import com.google.android.gms.tasks.Task;
 import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanner;
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions;
@@ -49,36 +44,8 @@ public class GoogleCodeScanner implements BarcodeScanner {
             // 获取扫码器实例
             scanner = GmsBarcodeScanning.getClient(activity, options);
             
-            // 检查模块是否已安装
-            ModuleInstallClient moduleInstallClient = ModuleInstall.getClient(activity);
-            Task<ModuleInstallResponse> installTask = 
-                    moduleInstallClient.areModulesAvailable(scanner.getModules());
-            
-            installTask.addOnSuccessListener(response -> {
-                if (!response.areModulesAvailable()) {
-                    // 模块未安装，请求安装
-                    ModuleInstallRequest request = ModuleInstallRequest.newBuilder()
-                            .addApi(scanner.getModules().get(0))
-                            .build();
-                    moduleInstallClient.installModules(request)
-                            .addOnSuccessListener(installResponse -> {
-                                // 安装成功，开始扫码
-                                performScan();
-                            })
-                            .addOnFailureListener(e -> {
-                                // 安装失败
-                                if (callback != null) {
-                                    callback.onError("无法安装扫码模块: " + e.getMessage());
-                                }
-                            });
-                } else {
-                    // 模块已安装，直接扫码
-                    performScan();
-                }
-            }).addOnFailureListener(e -> {
-                // 检查失败，尝试直接扫码
-                performScan();
-            });
+            // Google Code Scanner 会自动处理模块下载
+            performScan();
             
         } catch (Exception e) {
             if (callback != null) {
