@@ -253,9 +253,11 @@ public class MlKitBarcodeScanner implements BarcodeScanner {
         }
         
         static ScanCallback getCallback() {
-            ScanCallback result = callback;
-            callback = null; // 使用后清除
-            return result;
+            return callback;
+        }
+
+        static void clearCallback() {
+            callback = null;
         }
     }
 }

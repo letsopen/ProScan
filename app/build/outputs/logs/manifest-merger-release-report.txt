@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-50:12
-INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-50:12
-INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-50:12
-INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-50:12
+ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-51:12
+INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-51:12
+INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-51:12
+INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-51:12
 MERGED from [com.google.android.material:material:1.9.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\74b74808373ab0205595ee932546f0dd\transformed\material-1.9.0\AndroidManifest.xml:17:1-26:12
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] C:\Users\Administrator\.gradle\caches\8.13\transforms\7eb027e7305127024cd5dad21ffe3a42\transformed\constraintlayout-2.1.4\AndroidManifest.xml:2:1-11:12
 MERGED from [androidx.camera:camera-view:1.2.3] C:\Users\Administrator\.gradle\caches\8.13\transforms\f503d0958cd94e32f1892b7b3aac30d4\transformed\jetified-camera-view-1.2.3\AndroidManifest.xml:17:1-22:12
@@ -117,8 +117,8 @@ MERGED from [com.google.android.datatransport:transport-backend-cct:2.3.3] C:\Us
 	android:name
 		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:9:22-64
 application
-ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:11:5-49:19
-INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:11:5-49:19
+ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:11:5-50:19
+INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:11:5-50:19
 MERGED from [com.google.android.material:material:1.9.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\74b74808373ab0205595ee932546f0dd\transformed\material-1.9.0\AndroidManifest.xml:24:5-20
 MERGED from [com.google.android.material:material:1.9.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\74b74808373ab0205595ee932546f0dd\transformed\material-1.9.0\AndroidManifest.xml:24:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] C:\Users\Administrator\.gradle\caches\8.13\transforms\7eb027e7305127024cd5dad21ffe3a42\transformed\constraintlayout-2.1.4\AndroidManifest.xml:9:5-20
@@ -220,25 +220,27 @@ ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidMan
 	android:name
 		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:33:13-50
 activity#com.example.proscan.scanner.impl.MlKitBarcodeScanner$MlKitScanActivity
-ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:38:9-44:40
+ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:38:9-45:40
 	android:screenOrientation
 		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:40:13-51
 	android:stateNotNeeded
-		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:41:13-42
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:42:13-42
 	android:windowSoftInputMode
-		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:43:13-60
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:44:13-60
 	android:exported
-		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:44:13-37
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:45:13-37
+	android:configChanges
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:41:13-106
 	android:theme
-		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:42:13-54
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:43:13-54
 	android:name
 		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:39:13-79
 activity#com.example.proscan.HistoryActivity
-ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:46:9-48:40
+ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:47:9-49:40
 	android:exported
-		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:48:13-37
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:49:13-37
 	android:name
-		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:47:13-44
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:48:13-44
 uses-sdk
 INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml
