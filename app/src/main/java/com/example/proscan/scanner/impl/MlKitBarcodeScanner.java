@@ -1,5 +1,6 @@
 package com.example.proscan.scanner.impl;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -11,9 +12,13 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
+import androidx.camera.core.CameraControl;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.FocusMeteringAction;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
+import androidx.camera.core.MeteringPoint;
+import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -22,6 +27,7 @@ import androidx.lifecycle.LifecycleOwner;
 
 import com.example.proscan.R;
 import com.example.proscan.scanner.BarcodeScanner;
+import com.example.proscan.view.ViewfinderView;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.barcode.BarcodeScanning;
 import com.google.mlkit.vision.barcode.common.Barcode;
@@ -66,6 +72,7 @@ public class MlKitBarcodeScanner implements BarcodeScanner {
      */
     public static class MlKitScanActivity extends AppCompatActivity {
         private PreviewView previewView;
+        private ViewfinderView viewfinderView;
         private TextView scanText;
         private ProcessCameraProvider cameraProvider;
         private ExecutorService cameraExecutor;
@@ -82,7 +89,7 @@ public class MlKitBarcodeScanner implements BarcodeScanner {
             setContentView(R.layout.activity_mlkit_scan);
             
             previewView = findViewById(R.id.preview_view);
-            // scanFrame 已被自定义 View 替代，不再需要手动查找
+            viewfinderView = findViewById(R.id.viewfinder_view);
             scanText = findViewById(R.id.scan_text);
             
             cameraExecutor = Executors.newSingleThreadExecutor();
@@ -139,11 +146,41 @@ public class MlKitBarcodeScanner implements BarcodeScanner {
                         preview,
                         imageAnalysis
                 );
+
+                // 确保启用连续自动对焦 (Continuous Auto Focus)
+                // 取消任何现有的焦点锁定，恢复到自动对焦模式
+                CameraControl cameraControl = camera.getCameraControl();
+                cameraControl.cancelFocusAndMetering();
+
+                // 设置点击对焦
+                setupTapToFocus(cameraControl);
+
             } catch (Exception e) {
                 if (currentCallback != null) {
                     currentCallback.onError("相机绑定失败: " + e.getMessage());
                 }
                 finish();
+            }
+        }
+        
+        private void setupTapToFocus(CameraControl cameraControl) {
+            if (viewfinderView != null) {
+                viewfinderView.setOnTouchListener((v, event) -> {
+                    if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+                        MeteringPointFactory factory = previewView.getMeteringPointFactory();
+                        MeteringPoint point = factory.createPoint(event.getX(), event.getY());
+                        
+                        // 创建对焦动作，设置自动取消时间（例如3秒后恢复自动对焦）
+                        FocusMeteringAction action = new FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AF)
+                                .setAutoCancelDuration(3, java.util.concurrent.TimeUnit.SECONDS)
+                                .build();
+                        
+                        cameraControl.startFocusAndMetering(action);
+                        v.performClick(); // 辅助功能支持
+                        return true;
+                    }
+                    return false;
+                });
             }
         }
         
@@ -182,7 +219,7 @@ public class MlKitBarcodeScanner implements BarcodeScanner {
                     return;
                 }
                 
-                InputImage inputImage = InputImage.fromMediaImage(
+                @SuppressLint("UnsafeOptInUsageError") InputImage inputImage = InputImage.fromMediaImage(
                         image.getImage(),
                         image.getImageInfo().getRotationDegrees()
                 );
