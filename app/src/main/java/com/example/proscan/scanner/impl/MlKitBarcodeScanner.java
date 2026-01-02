@@ -75,6 +75,11 @@ public class MlKitBarcodeScanner implements BarcodeScanner {
         @Override
         protected void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
+            // 设置全屏
+            supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, 
+                    WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            
             setContentView(R.layout.activity_mlkit_scan);
             
             previewView = findViewById(R.id.preview_view);
