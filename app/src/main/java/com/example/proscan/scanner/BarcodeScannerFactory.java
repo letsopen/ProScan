@@ -62,19 +62,19 @@ public class BarcodeScannerFactory {
      * 注意：Google Code Scanner 需要 Google Play Services，所以不在自动选择列表中
      */
     public static BarcodeScanner getAvailableScanner(Activity activity) {
-        // 优先使用华为 Scan Kit（如果可用）
+        // 1. 优先使用 ML Kit 独立版本（最稳健，不依赖外部服务，自带模型）
+        MlKitBarcodeScanner mlKitScanner = new MlKitBarcodeScanner();
+        if (mlKitScanner.isAvailable(activity)) {
+            return mlKitScanner;
+        }
+
+        // 2. 尝试使用华为 Scan Kit（仅在华为设备上）
         HuaweiBarcodeScanner huaweiScanner = new HuaweiBarcodeScanner();
         if (huaweiScanner.isAvailable(activity)) {
             return huaweiScanner;
         }
         
-        // 然后使用 ML Kit 独立版本（不需要 Google Play Services）
-        MlKitBarcodeScanner mlKitScanner = new MlKitBarcodeScanner();
-        if (mlKitScanner.isAvailable(activity)) {
-            return mlKitScanner;
-        }
-        
-        // 降级到 ZXing
+        // 3. 降级到 ZXing
         return new ZxingBarcodeScanner();
     }
     

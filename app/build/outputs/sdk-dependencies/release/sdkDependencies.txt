@@ -77,10 +77,10 @@ library {
   maven_library {
     groupId: "org.jetbrains.kotlin"
     artifactId: "kotlin-stdlib"
-    version: "1.7.10"
+    version: "1.7.20"
   }
   digests {
-    sha256: "\347q\376t%\n\224>\217cFq2\001\377\035\214\271\\:]\032\221\242+e\251\340Oj\211\001"
+    sha256: "wy\354\226\271\254\277\222\312\0028X\254\004T?\235,;\337\027\"B_\377B\362_\363\254\374\233"
   }
   repo_index {
     value: 1
@@ -90,10 +90,10 @@ library {
   maven_library {
     groupId: "org.jetbrains.kotlin"
     artifactId: "kotlin-stdlib-common"
-    version: "1.7.10"
+    version: "1.7.20"
   }
   digests {
-    sha256: "\031\361\002\357\351b\237\216\253\3068S\255\025\3053\344|G\371\037\312\t(\\[\336\206\345\237\221\324"
+    sha256: "\340\351\031b\274\000\a3\213\365\261s\237b\222z\303-\024\272=\202\177\246\b\253NSQr\235]"
   }
   repo_index {
     value: 1
@@ -513,10 +513,10 @@ library {
   maven_library {
     groupId: "androidx.lifecycle"
     artifactId: "lifecycle-livedata"
-    version: "2.0.0"
+    version: "2.1.0"
   }
   digests {
-    sha256: "\310&\t\316\330\304\230\360\247\001\243\017\266w\033\267H\b`\332\356\204\330.\n\201\356\206\355\367\2729"
+    sha256: "$.Dk\355=\263o\r\360\252\260\313\177\221\006\v\322\332\267\255\312\321\021z\337T\347$\315\035&"
   }
   repo_index {
   }
@@ -726,6 +726,490 @@ library {
   }
   repo_index {
     value: 1
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.android.gms"
+    artifactId: "play-services-code-scanner"
+    version: "16.1.0"
+  }
+  digests {
+    sha256: "\222\343t\351\257T\301\215L\246\352\230\275}\305\241\220p\206Xav\234CJ\353\252\333\032\2457S"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.android.datatransport"
+    artifactId: "transport-api"
+    version: "2.2.1"
+  }
+  digests {
+    sha256: "\346/s\272\034\177]\025\365\330m\216\232)\214B\314\320d\216|\346\v\2361/.\315\022;^\320"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.android.datatransport"
+    artifactId: "transport-backend-cct"
+    version: "2.3.3"
+  }
+  digests {
+    sha256: "\262*\024\325`\245\220\334\207^\220$$\262\232\023\240-\037\257){|9\251\000yg\377\255\314\275"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.android.datatransport"
+    artifactId: "transport-runtime"
+    version: "2.2.6"
+  }
+  digests {
+    sha256: "\330:\322<\023D)i\021a\311$v\243\310=\3626\315\037\213\255\277\324\360\a#\264\354\315t\034"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "javax.inject"
+    artifactId: "javax.inject"
+    version: "1"
+  }
+  digests {
+    sha256: "\221\307pD\245\fH\0266\303-\221o\330\234\221\030\247!\2259\004R\310\020e\b\017\225}\347\377"
+  }
+  repo_index {
+    value: 1
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.firebase"
+    artifactId: "firebase-encoders"
+    version: "16.1.0"
+  }
+  digests {
+    sha256: "\217\211\247B\230\273\314\302\305C8R\b\242\360\306\177`<\346~n\302\034\307r\351\216h\217|\365"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.firebase"
+    artifactId: "firebase-encoders-json"
+    version: "17.1.0"
+  }
+  digests {
+    sha256: "\202\225\307U\274\255\310z*\256\345\271\345h\362\177\3218\375E\377\021Y\250\356t|\364\303\243\215\205"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.android.gms"
+    artifactId: "play-services-base"
+    version: "18.1.0"
+  }
+  digests {
+    sha256: "N\312V\316\354\3242Z7l\330C\257V7~#v\316(M\fo\005\245\320\250/L\033\370\315"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.android.gms"
+    artifactId: "play-services-basement"
+    version: "18.1.0"
+  }
+  digests {
+    sha256: "\003\272\025\363\206\317&\v\336r\374@\020\373\211\250 \304}Q\316c\274\t)~\253\346\314\340\233\335"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.android.gms"
+    artifactId: "play-services-tasks"
+    version: "18.0.2"
+  }
+  digests {
+    sha256: "\003F\\\3656\200\332#\323\324\243\231\\\003)\267\367;!\0358y\036\3136\345\221\376\273\211fd"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.firebase"
+    artifactId: "firebase-components"
+    version: "16.1.0"
+  }
+  digests {
+    sha256: "\202\351\032\245\355\030n\355\257\037\"\020\365\322A\272nDV\317\f2\224\235\\\333\341R\260\342\350\213"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.firebase"
+    artifactId: "firebase-annotations"
+    version: "16.0.0"
+  }
+  digests {
+    sha256: "\2100\362\350\245\3444\313\305\344\275\030\0230s\266\350Q\212\214\350\354,\346\363\262s\311\035\226d\302"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.mlkit"
+    artifactId: "barcode-scanning-common"
+    version: "17.0.0"
+  }
+  digests {
+    sha256: "\315\016\236q\2704\a\215J\212\177\t\347-}|:\"\342X\351`-\247\254\206\024fw\004?\024"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.mlkit"
+    artifactId: "vision-common"
+    version: "17.3.0"
+  }
+  digests {
+    sha256: "\300\b\\\245\373\240\017\021R\234\n\203\261(Q\352lY\233\274\310\257\375\222~\221K)\247CE\237"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "androidx.exifinterface"
+    artifactId: "exifinterface"
+    version: "1.3.2"
+  }
+  digests {
+    sha256: "\207p\301\200\020>\v\214\004\240~\264\305\221S\257c\233\t\354\242]\352\351\275\315\257\206\235\036[k"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.android.odml"
+    artifactId: "image"
+    version: "1.0.0-beta1"
+  }
+  digests {
+    sha256: ".q\2521\370:\224\025\'\177\021\235\346q\225ro\a\321v\016\225B\301\021w\2142\016:\241\362"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.mlkit"
+    artifactId: "common"
+    version: "18.9.0"
+  }
+  digests {
+    sha256: "B\vm\365\227\277\376\033\314\207+ME\022\316~\\\032O\265\330\252\036y\322\261\274\321\226|\020\020"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.mlkit"
+    artifactId: "barcode-scanning"
+    version: "17.2.0"
+  }
+  digests {
+    sha256: "pb ]0\312`\315\205\243bM\035\002\303\245\031\301B\333\372x\352\236\217W}\355\371\022\033\227"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.android.gms"
+    artifactId: "play-services-mlkit-barcode-scanning"
+    version: "18.3.0"
+  }
+  digests {
+    sha256: "4\022\302\356V\377\366+\222I0\214\000\v\323\212\rs\344\336Y^\305\312\025\331z\023\023C\035\327"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.mlkit"
+    artifactId: "vision-interfaces"
+    version: "16.2.0"
+  }
+  digests {
+    sha256: "*\320\364xM\255$J\250\205\332\341}P\213\330T\301\331v\276 Z\222\332\030R\350\237\256\036\005"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "androidx.camera"
+    artifactId: "camera-core"
+    version: "1.2.3"
+  }
+  digests {
+    sha256: "\264\256\260p\300\002l\361[\f$\366\fr\305\224|~\213\244\2159-\346\365\343\354\361\210\325\343\367"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.google.auto.value"
+    artifactId: "auto-value-annotations"
+    version: "1.6.3"
+  }
+  digests {
+    sha256: "\016\225\037\356\2141\366\002p\274FU:\205\206\000\033{\223\333\261*\354\0067:\251\232\025\003\222\300"
+  }
+  repo_index {
+    value: 1
+  }
+}
+library {
+  maven_library {
+    groupId: "androidx.camera"
+    artifactId: "camera-camera2"
+    version: "1.2.3"
+  }
+  digests {
+    sha256: ">\221/d\347\267\252\031\251,\004\306&\302\344\006;v\000I\256\347\231\250|\250\273\372\027\205\032\234"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "androidx.camera"
+    artifactId: "camera-lifecycle"
+    version: "1.2.3"
+  }
+  digests {
+    sha256: "\211\237E\242\032\201\352\352.\"\221\273O@a\303\257\342\352=\364t\314\037\355\311Ki@\247\031\313"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "androidx.camera"
+    artifactId: "camera-view"
+    version: "1.2.3"
+  }
+  digests {
+    sha256: "\b\300\361b\367]\205\2234\343#=\252\364\374\331\270\0005\272\310\351\315\231\260V\201\344\306\216\021s"
+  }
+  repo_index {
+  }
+}
+library {
+  maven_library {
+    groupId: "com.huawei.hms"
+    artifactId: "scan"
+    version: "2.12.0.300"
+  }
+  digests {
+    sha256: "\022g\023I2q\364R\263\375G\231.\221\317\275\024]^mQ[\333\324\271~\r\"\310\002\034\315"
+  }
+  repo_index {
+    value: 2
+  }
+}
+library {
+  maven_library {
+    groupId: "com.huawei.hms"
+    artifactId: "network-grs"
+    version: "7.0.2.301"
+  }
+  digests {
+    sha256: "\342|\356\360\355\001\021\257\262\2507\002\234\304\az\276\206\344X\a\350\306-?\247\017\211\3538\030\027"
+  }
+  repo_index {
+    value: 2
+  }
+}
+library {
+  maven_library {
+    groupId: "com.huawei.android.hms"
+    artifactId: "security-ssl"
+    version: "1.2.0.307"
+  }
+  digests {
+    sha256: "\251\033f\'\3538\331h\241\302\333_^\374\364Y\203<5Po\017/\242J3R\265\302\016z\301"
+  }
+  repo_index {
+    value: 2
+  }
+}
+library {
+  maven_library {
+    groupId: "com.huawei.hms"
+    artifactId: "network-common"
+    version: "7.0.2.301"
+  }
+  digests {
+    sha256: "Zw\224sh|T|\316\354a\253tL\323\257q\256\317\204F\v\323\351\200\373\026\305\3168L\327"
+  }
+  repo_index {
+    value: 2
+  }
+}
+library {
+  maven_library {
+    groupId: "com.huawei.hms"
+    artifactId: "network-framework-compat"
+    version: "7.0.2.301"
+  }
+  digests {
+    sha256: "B8o\f\017\316\244\310c\027\023\252\005\235\255\222\001\261\237\236\006\241[\320\372\321\\\322\371\277\346\224"
+  }
+  repo_index {
+    value: 2
+  }
+}
+library {
+  maven_library {
+    groupId: "com.huawei.android.hms"
+    artifactId: "security-base"
+    version: "1.2.0.306"
+  }
+  digests {
+    sha256: "&8oN\275\272(\254e\036\274\270\314\341\207\226\260\217m\177\035\"\000\377\365IX\320\354\265\327\257"
+  }
+  repo_index {
+    value: 2
+  }
+}
+library {
+  maven_library {
+    groupId: "com.huawei.hms"
+    artifactId: "dynamic-api"
+    version: "1.0.24.300"
+  }
+  digests {
+    sha256: "\201R\321\304\v\334d\347\372\321\317\035\3121\261\227\370/)\031\037Me\221\361 \304e\236\ap\305"
+  }
+  repo_index {
+    value: 2
+  }
+}
+library {
+  maven_library {
+    groupId: "com.huawei.hmf"
+    artifactId: "tasks"
+    version: "1.5.2.206"
+  }
+  digests {
+    sha256: "S\303O\223\032\256\330$!z\333\252=*R\275\'\254\032\374\314\350\311\234\341RP\037\244\241\260\327"
+  }
+  repo_index {
+    value: 2
+  }
+}
+library {
+  maven_library {
+    groupId: "com.huawei.hms"
+    artifactId: "ml-computer-sdkbase-inner"
+    version: "3.8.0.303"
+  }
+  digests {
+    sha256: "C\323\263\263\003\026\026\205?R\000\237\320\ta)\260/)\2724{\001\3719_\bm\264\305\260q"
+  }
+  repo_index {
+    value: 2
+  }
+}
+library {
+  maven_library {
+    groupId: "com.huawei.agconnect"
+    artifactId: "agconnect-core"
+    version: "1.7.2.300"
+  }
+  digests {
+    sha256: "\354\375?\tb\332\2121\037\\\211\313^?\347\325\177!\275\206\262\327Ql\240\251Kdep\303\302"
+  }
+  repo_index {
+    value: 2
+  }
+}
+library {
+  maven_library {
+    groupId: "com.huawei.hms"
+    artifactId: "ml-computer-commonutils-inner"
+    version: "3.8.0.303"
+  }
+  digests {
+    sha256: "\264\343[\226|\022C\235\210\0068\211vw\\\303\321\227,\232n\215s\333\265\371\312\265\220\344\264\301"
+  }
+  repo_index {
+    value: 2
+  }
+}
+library {
+  maven_library {
+    groupId: "com.huawei.hms"
+    artifactId: "ml-computer-agc-inner"
+    version: "3.8.0.303"
+  }
+  digests {
+    sha256: "\274\243\204R\304\r\253!\f$\b5*A\320?\032_S\257Y\274\322\021\202\214\262\332\330\266\231c"
+  }
+  repo_index {
+    value: 2
+  }
+}
+library {
+  maven_library {
+    groupId: "com.huawei.hms"
+    artifactId: "hatool"
+    version: "6.11.0.301"
+  }
+  digests {
+    sha256: "\243\317\350c\247\273\200\372\235\230\366pq\220\352\216\033d\266vSW\241(\002\003YP\207\232+R"
+  }
+  repo_index {
+    value: 2
+  }
+}
+library {
+  maven_library {
+    groupId: "com.huawei.android.hms"
+    artifactId: "security-encrypt"
+    version: "1.2.0.307"
+  }
+  digests {
+    sha256: "\004E\374\0221A#r\346\356\261Tr\263}\334g\320\312Y`_\311\346\n\307G\230\240:\251\244"
+  }
+  repo_index {
+    value: 2
   }
 }
 library_dependencies {
@@ -1074,6 +1558,222 @@ library_dependencies {
   library_index: 58
   library_dep_index: 59
 }
+library_dependencies {
+  library_index: 60
+  library_dep_index: 1
+  library_dep_index: 61
+  library_dep_index: 62
+  library_dep_index: 63
+  library_dep_index: 67
+  library_dep_index: 68
+  library_dep_index: 69
+  library_dep_index: 70
+  library_dep_index: 65
+  library_dep_index: 66
+  library_dep_index: 72
+  library_dep_index: 76
+}
+library_dependencies {
+  library_index: 61
+  library_dep_index: 2
+}
+library_dependencies {
+  library_index: 62
+  library_dep_index: 2
+  library_dep_index: 61
+  library_dep_index: 63
+  library_dep_index: 65
+  library_dep_index: 66
+}
+library_dependencies {
+  library_index: 63
+  library_dep_index: 2
+  library_dep_index: 61
+  library_dep_index: 64
+}
+library_dependencies {
+  library_index: 65
+  library_dep_index: 2
+}
+library_dependencies {
+  library_index: 66
+  library_dep_index: 2
+  library_dep_index: 65
+}
+library_dependencies {
+  library_index: 67
+  library_dep_index: 3
+  library_dep_index: 4
+  library_dep_index: 39
+  library_dep_index: 68
+  library_dep_index: 69
+}
+library_dependencies {
+  library_index: 68
+  library_dep_index: 3
+  library_dep_index: 4
+  library_dep_index: 39
+}
+library_dependencies {
+  library_index: 69
+  library_dep_index: 68
+}
+library_dependencies {
+  library_index: 70
+  library_dep_index: 2
+  library_dep_index: 71
+}
+library_dependencies {
+  library_index: 72
+  library_dep_index: 68
+  library_dep_index: 73
+}
+library_dependencies {
+  library_index: 73
+  library_dep_index: 74
+  library_dep_index: 61
+  library_dep_index: 62
+  library_dep_index: 63
+  library_dep_index: 67
+  library_dep_index: 68
+  library_dep_index: 69
+  library_dep_index: 75
+  library_dep_index: 70
+  library_dep_index: 65
+  library_dep_index: 66
+  library_dep_index: 76
+}
+library_dependencies {
+  library_index: 74
+  library_dep_index: 2
+}
+library_dependencies {
+  library_index: 76
+  library_dep_index: 4
+  library_dep_index: 61
+  library_dep_index: 62
+  library_dep_index: 63
+  library_dep_index: 67
+  library_dep_index: 68
+  library_dep_index: 69
+  library_dep_index: 70
+  library_dep_index: 65
+  library_dep_index: 66
+}
+library_dependencies {
+  library_index: 77
+  library_dep_index: 68
+  library_dep_index: 78
+  library_dep_index: 72
+  library_dep_index: 76
+  library_dep_index: 73
+}
+library_dependencies {
+  library_index: 78
+  library_dep_index: 61
+  library_dep_index: 62
+  library_dep_index: 63
+  library_dep_index: 67
+  library_dep_index: 68
+  library_dep_index: 69
+  library_dep_index: 75
+  library_dep_index: 70
+  library_dep_index: 65
+  library_dep_index: 66
+  library_dep_index: 72
+  library_dep_index: 76
+  library_dep_index: 73
+  library_dep_index: 79
+}
+library_dependencies {
+  library_index: 79
+  library_dep_index: 68
+  library_dep_index: 69
+}
+library_dependencies {
+  library_index: 80
+  library_dep_index: 2
+  library_dep_index: 5
+  library_dep_index: 9
+  library_dep_index: 4
+  library_dep_index: 74
+  library_dep_index: 14
+  library_dep_index: 42
+  library_dep_index: 81
+  library_dep_index: 10
+  library_dep_index: 6
+}
+library_dependencies {
+  library_index: 82
+  library_dep_index: 2
+  library_dep_index: 80
+  library_dep_index: 9
+  library_dep_index: 4
+  library_dep_index: 81
+  library_dep_index: 10
+}
+library_dependencies {
+  library_index: 83
+  library_dep_index: 80
+  library_dep_index: 9
+  library_dep_index: 4
+  library_dep_index: 14
+  library_dep_index: 81
+  library_dep_index: 10
+}
+library_dependencies {
+  library_index: 84
+  library_dep_index: 2
+  library_dep_index: 5
+  library_dep_index: 0
+  library_dep_index: 80
+  library_dep_index: 83
+  library_dep_index: 9
+  library_dep_index: 4
+  library_dep_index: 14
+  library_dep_index: 81
+  library_dep_index: 10
+}
+library_dependencies {
+  library_index: 85
+  library_dep_index: 86
+  library_dep_index: 91
+  library_dep_index: 92
+  library_dep_index: 93
+  library_dep_index: 94
+  library_dep_index: 97
+}
+library_dependencies {
+  library_index: 86
+  library_dep_index: 87
+  library_dep_index: 88
+  library_dep_index: 89
+}
+library_dependencies {
+  library_index: 89
+  library_dep_index: 90
+  library_dep_index: 88
+}
+library_dependencies {
+  library_index: 93
+  library_dep_index: 94
+  library_dep_index: 95
+  library_dep_index: 96
+}
+library_dependencies {
+  library_index: 94
+  library_dep_index: 92
+}
+library_dependencies {
+  library_index: 96
+  library_dep_index: 95
+  library_dep_index: 94
+}
+library_dependencies {
+  library_index: 97
+  library_dep_index: 98
+  library_dep_index: 87
+}
 module_dependencies {
   module_name: "base"
   dependency_index: 0
@@ -1081,6 +1781,13 @@ module_dependencies {
   dependency_index: 48
   dependency_index: 58
   dependency_index: 59
+  dependency_index: 60
+  dependency_index: 77
+  dependency_index: 80
+  dependency_index: 82
+  dependency_index: 83
+  dependency_index: 84
+  dependency_index: 85
 }
 repositories {
   maven_repo {
@@ -1090,5 +1797,10 @@ repositories {
 repositories {
   maven_repo {
     url: "https://repo.maven.apache.org/maven2/"
+  }
+}
+repositories {
+  maven_repo {
+    url: "https://developer.huawei.com/repo/"
   }
 }

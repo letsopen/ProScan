@@ -92,7 +92,13 @@ public class HuaweiBarcodeScanner implements BarcodeScanner {
     
     @Override
     public boolean isAvailable(Activity activity) {
-        // 检查是否在华为设备上，或者是否安装了HMS Core
+        // 1. 首先检查制造商是否为 Huawei 或 Honor
+        String manufacturer = android.os.Build.MANUFACTURER;
+        if (!"HUAWEI".equalsIgnoreCase(manufacturer) && !"HONOR".equalsIgnoreCase(manufacturer)) {
+            return false;
+        }
+
+        // 2. 检查是否在华为设备上，或者是否安装了HMS Core
         try {
             // 简单检查：尝试创建扫码选项
             HmsScanAnalyzerOptions options = new HmsScanAnalyzerOptions.Creator().create();

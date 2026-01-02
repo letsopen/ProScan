@@ -11,6 +11,11 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.proscan.db.HistoryDbHelper;
@@ -39,6 +44,8 @@ public class MainActivity extends AppCompatActivity {
     private HistoryDbHelper dbHelper;
     private BarcodeScanner barcodeScanner;
 
+    private static final int PERMISSION_REQUEST_CAMERA = 100;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,32 +58,17 @@ public class MainActivity extends AppCompatActivity {
         btnVisit = findViewById(R.id.btnVisit);
         buttonHistory = findViewById(R.id.buttonHistory);
 
-        // 初始化扫码器（优先使用Google ML Kit，如果不可用则使用ZXing）
+        // 初始化扫码器
         barcodeScanner = BarcodeScannerFactory.getAvailableScanner(this);
 
         buttonScan.setOnClickListener(v -> {
-            if (barcodeScanner != null) {
-                barcodeScanner.startScan(this, new BarcodeScanner.ScanCallback() {
-                    @Override
-                    public void onSuccess(String result) {
-                        editTextUrl.setText(result);
-                        dbHelper.addHistoryItem(result, "scan");
-                        Toast.makeText(MainActivity.this, "扫描成功", Toast.LENGTH_SHORT).show();
-                    }
-
-                    @Override
-                    public void onCancel() {
-                        Toast.makeText(MainActivity.this, "扫描已取消", Toast.LENGTH_SHORT).show();
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        Toast.makeText(MainActivity.this, "扫描失败: " + error, Toast.LENGTH_SHORT).show();
-                    }
-                });
+            if (checkCameraPermission()) {
+                startScan();
+            } else {
+                requestCameraPermission();
             }
         });
-
+        
         buttonPaste.setOnClickListener(v -> {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
             if (clipboard.hasPrimaryClip()) {
@@ -114,6 +106,52 @@ public class MainActivity extends AppCompatActivity {
 
         btnBarcode.setOnClickListener(v -> generateBarcode());
         btnQRCode.setOnClickListener(v -> generateQRCode());
+    }
+
+    private boolean checkCameraPermission() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void requestCameraPermission() {
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.CAMERA},
+                PERMISSION_REQUEST_CAMERA);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CAMERA) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startScan();
+            } else {
+                Toast.makeText(this, "需要相机权限才能扫码", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void startScan() {
+        if (barcodeScanner != null) {
+            barcodeScanner.startScan(this, new BarcodeScanner.ScanCallback() {
+                @Override
+                public void onSuccess(String result) {
+                    editTextUrl.setText(result);
+                    dbHelper.addHistoryItem(result, "scan");
+                    Toast.makeText(MainActivity.this, "扫描成功", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onCancel() {
+                    Toast.makeText(MainActivity.this, "扫描已取消", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onError(String error) {
+                    Toast.makeText(MainActivity.this, "扫描失败: " + error, Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 
     @Override
