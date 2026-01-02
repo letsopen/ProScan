@@ -11,6 +11,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // 华为 Maven 仓库
+        maven { url 'https://developer.huawei.com/repo/' }
     }
 }
 

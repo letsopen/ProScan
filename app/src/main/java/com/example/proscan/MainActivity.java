@@ -14,8 +14,10 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.proscan.db.HistoryDbHelper;
-import com.google.zxing.integration.android.IntentIntegrator;
-import com.google.zxing.integration.android.IntentResult;
+import com.example.proscan.scanner.BarcodeScanner;
+import com.example.proscan.scanner.BarcodeScannerFactory;
+import com.example.proscan.scanner.impl.HuaweiBarcodeScanner;
+import com.example.proscan.scanner.impl.ZxingBarcodeScanner;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
@@ -35,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private Button btnVisit;
     private ImageButton buttonHistory;
     private HistoryDbHelper dbHelper;
+    private BarcodeScanner barcodeScanner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,16 +51,30 @@ public class MainActivity extends AppCompatActivity {
         btnVisit = findViewById(R.id.btnVisit);
         buttonHistory = findViewById(R.id.buttonHistory);
 
+        // 初始化扫码器（优先使用Google ML Kit，如果不可用则使用ZXing）
+        barcodeScanner = BarcodeScannerFactory.getAvailableScanner(this);
+
         buttonScan.setOnClickListener(v -> {
-            IntentIntegrator integrator = new IntentIntegrator(this);
-            integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE);
-            integrator.setPrompt("请将二维码放入框内扫描");
-            integrator.setCameraId(0);
-            integrator.setBeepEnabled(false);
-            integrator.setBarcodeImageEnabled(true);
-            integrator.setOrientationLocked(false);
-            integrator.setCaptureActivity(CustomCaptureActivity.class);
-            integrator.initiateScan();
+            if (barcodeScanner != null) {
+                barcodeScanner.startScan(this, new BarcodeScanner.ScanCallback() {
+                    @Override
+                    public void onSuccess(String result) {
+                        editTextUrl.setText(result);
+                        dbHelper.addHistoryItem(result, "scan");
+                        Toast.makeText(MainActivity.this, "扫描成功", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        Toast.makeText(MainActivity.this, "扫描已取消", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Toast.makeText(MainActivity.this, "扫描失败: " + error, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
         });
 
         buttonPaste.setOnClickListener(v -> {
@@ -101,18 +118,20 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
-        if (result != null) {
-            if (result.getContents() == null) {
-                Toast.makeText(this, "扫描已取消", Toast.LENGTH_SHORT).show();
-            } else {
-                String content = result.getContents();
-                editTextUrl.setText(content);
-                dbHelper.addHistoryItem(content, "scan");
-                Toast.makeText(this, "扫描成功", Toast.LENGTH_SHORT).show();
-            }
-        } else if (requestCode == 1 && resultCode == RESULT_OK && data != null) {
-            // 处理从历史记录返回的内容
+        // 处理华为扫码结果（华为使用Activity Result）
+        if (HuaweiBarcodeScanner.handleActivityResult(requestCode, resultCode, data)) {
+            // 华为已处理，返回
+            return;
+        }
+        
+        // 处理ZXing扫码结果（ZXing使用Activity Result）
+        if (ZxingBarcodeScanner.handleActivityResult(requestCode, resultCode, data)) {
+            // ZXing已处理，返回
+            return;
+        }
+        
+        // 处理从历史记录返回的内容
+        if (requestCode == 1 && resultCode == RESULT_OK && data != null) {
             String content = data.getStringExtra("content");
             if (content != null) {
                 editTextUrl.setText(content);
