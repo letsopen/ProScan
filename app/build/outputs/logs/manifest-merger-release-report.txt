@@ -1,18 +1,14 @@
 -- Merging decision tree log ---
 manifest
-ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-58:12
-INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-58:12
-INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-58:12
-INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-58:12
+ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-66:12
+INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-66:12
+INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-66:12
+INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:2:1-66:12
 MERGED from [com.google.android.material:material:1.9.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\74b74808373ab0205595ee932546f0dd\transformed\material-1.9.0\AndroidManifest.xml:17:1-26:12
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] C:\Users\Administrator\.gradle\caches\8.13\transforms\7eb027e7305127024cd5dad21ffe3a42\transformed\constraintlayout-2.1.4\AndroidManifest.xml:2:1-11:12
 MERGED from [androidx.camera:camera-view:1.2.3] C:\Users\Administrator\.gradle\caches\8.13\transforms\f503d0958cd94e32f1892b7b3aac30d4\transformed\jetified-camera-view-1.2.3\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.appcompat:appcompat-resources:1.6.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\7011d89884e6a3063a6ce55edd9f882f\transformed\jetified-appcompat-resources-1.6.1\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.appcompat:appcompat:1.6.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\9751129cf9a082d51cb0234e0f752002\transformed\appcompat-1.6.1\AndroidManifest.xml:17:1-22:12
-MERGED from [com.github.jenly1314.WeChatQRCode:opencv:2.4.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\60667253d8c6eae60ffb3a52012aded9\transformed\jetified-opencv-2.4.0\AndroidManifest.xml:2:1-7:12
-MERGED from [com.github.jenly1314.WeChatQRCode:opencv-armv7a:2.4.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\c5a997a31b80348b90c2039e6716b92c\transformed\jetified-opencv-armv7a-2.4.0\AndroidManifest.xml:2:1-7:12
-MERGED from [com.github.jenly1314.WeChatQRCode:opencv-armv64:2.4.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\b28276371c44fee19fb5b72b610b5b0b\transformed\jetified-opencv-armv64-2.4.0\AndroidManifest.xml:2:1-7:12
-MERGED from [com.github.jenly1314.WeChatQRCode:wechat-qrcode:2.4.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\388896681f92f200ccf0c74900955547\transformed\jetified-wechat-qrcode-2.4.0\AndroidManifest.xml:2:1-7:12
 MERGED from [com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\784103a80b8bfc22377175428c72406b\transformed\jetified-zxing-android-embedded-4.3.0\AndroidManifest.xml:17:1-56:12
 MERGED from [com.google.android.gms:play-services-code-scanner:16.1.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\05a83c4539efab0ce46bdd89da22fc4e\transformed\jetified-play-services-code-scanner-16.1.0\AndroidManifest.xml:2:1-23:12
 MERGED from [com.google.mlkit:barcode-scanning:17.2.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\7fe88e3fb07fbd430d6bcee5232b112e\transformed\jetified-barcode-scanning-17.2.0\AndroidManifest.xml:2:1-7:12
@@ -59,7 +55,6 @@ MERGED from [com.google.android.datatransport:transport-api:2.2.1] C:\Users\Admi
 MERGED from [com.google.firebase:firebase-components:16.1.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\1fcff35c608481d21a3ebd732493cdaf\transformed\jetified-firebase-components-16.1.0\AndroidManifest.xml:15:1-23:12
 MERGED from [com.google.firebase:firebase-encoders-json:17.1.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\da671999a8888e82e2343f99bb813a4d\transformed\jetified-firebase-encoders-json-17.1.0\AndroidManifest.xml:15:1-23:12
 MERGED from [androidx.exifinterface:exifinterface:1.3.2] C:\Users\Administrator\.gradle\caches\8.13\transforms\caae814e64292528c6da37842e58329f\transformed\exifinterface-1.3.2\AndroidManifest.xml:17:1-24:12
-MERGED from [com.github.jenly1314:logx:1.2.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\cfa3e19b82d78e2397eebe8d901d684f\transformed\jetified-logx-1.2.0\AndroidManifest.xml:2:1-20:12
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\67b5f746dc5ca3f37a0531f2211c36b4\transformed\jetified-startup-runtime-1.1.1\AndroidManifest.xml:17:1-33:12
 MERGED from [androidx.tracing:tracing:1.0.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\b65b8f856d20f8fcb1147da66bb73469\transformed\jetified-tracing-1.0.0\AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\97be29755e6b940ef3dec554e527f2c8\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:17:1-27:12
@@ -122,8 +117,8 @@ MERGED from [com.google.android.datatransport:transport-backend-cct:2.3.3] C:\Us
 	android:name
 		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:9:22-64
 application
-ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:11:5-57:19
-INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:11:5-57:19
+ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:11:5-65:19
+INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:11:5-65:19
 MERGED from [com.google.android.material:material:1.9.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\74b74808373ab0205595ee932546f0dd\transformed\material-1.9.0\AndroidManifest.xml:24:5-20
 MERGED from [com.google.android.material:material:1.9.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\74b74808373ab0205595ee932546f0dd\transformed\material-1.9.0\AndroidManifest.xml:24:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] C:\Users\Administrator\.gradle\caches\8.13\transforms\7eb027e7305127024cd5dad21ffe3a42\transformed\constraintlayout-2.1.4\AndroidManifest.xml:9:5-20
@@ -160,8 +155,6 @@ MERGED from [com.google.android.datatransport:transport-backend-cct:2.3.3] C:\Us
 MERGED from [com.google.android.datatransport:transport-backend-cct:2.3.3] C:\Users\Administrator\.gradle\caches\8.13\transforms\55289e83f1a125e1d57723ef83fa40c1\transformed\jetified-transport-backend-cct-2.3.3\AndroidManifest.xml:28:5-36:19
 MERGED from [com.google.android.datatransport:transport-runtime:2.2.6] C:\Users\Administrator\.gradle\caches\8.13\transforms\b847fffca9bc620050c139515189b470\transformed\jetified-transport-runtime-2.2.6\AndroidManifest.xml:25:5-39:19
 MERGED from [com.google.android.datatransport:transport-runtime:2.2.6] C:\Users\Administrator\.gradle\caches\8.13\transforms\b847fffca9bc620050c139515189b470\transformed\jetified-transport-runtime-2.2.6\AndroidManifest.xml:25:5-39:19
-MERGED from [com.github.jenly1314:logx:1.2.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\cfa3e19b82d78e2397eebe8d901d684f\transformed\jetified-logx-1.2.0\AndroidManifest.xml:8:5-18:19
-MERGED from [com.github.jenly1314:logx:1.2.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\cfa3e19b82d78e2397eebe8d901d684f\transformed\jetified-logx-1.2.0\AndroidManifest.xml:8:5-18:19
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\67b5f746dc5ca3f37a0531f2211c36b4\transformed\jetified-startup-runtime-1.1.1\AndroidManifest.xml:25:5-31:19
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\67b5f746dc5ca3f37a0531f2211c36b4\transformed\jetified-startup-runtime-1.1.1\AndroidManifest.xml:25:5-31:19
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\97be29755e6b940ef3dec554e527f2c8\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:24:5-25:19
@@ -242,7 +235,7 @@ ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidMan
 		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:43:13-69
 	android:name
 		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:39:13-79
-activity#com.example.proscan.scanner.impl.WeChatBarcodeScanner$WeChatScanActivity
+activity#com.example.proscan.scanner.impl.UnifiedScanActivity
 ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:46:9-53:40
 	android:screenOrientation
 		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:48:13-51
@@ -257,13 +250,29 @@ ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidMan
 	android:theme
 		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:51:13-69
 	android:name
-		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:47:13-81
-activity#com.example.proscan.HistoryActivity
-ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:54:9-56:40
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:47:13-61
+activity#com.example.proscan.scanner.impl.HuaweiBarcodeScanner$HuaweiScanActivity
+ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:54:9-61:40
+	android:screenOrientation
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:56:13-51
+	android:stateNotNeeded
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:58:13-42
+	android:windowSoftInputMode
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:60:13-60
 	android:exported
-		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:56:13-37
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:61:13-37
+	android:configChanges
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:57:13-106
+	android:theme
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:59:13-69
 	android:name
-		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:55:13-44
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:55:13-81
+activity#com.example.proscan.HistoryActivity
+ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:62:9-64:40
+	android:exported
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:64:13-37
+	android:name
+		ADDED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml:63:13-44
 uses-sdk
 INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from C:\Users\Administrator\StudioProjects\ProScan\app\src\main\AndroidManifest.xml
@@ -278,14 +287,6 @@ MERGED from [androidx.appcompat:appcompat-resources:1.6.1] C:\Users\Administrato
 MERGED from [androidx.appcompat:appcompat-resources:1.6.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\7011d89884e6a3063a6ce55edd9f882f\transformed\jetified-appcompat-resources-1.6.1\AndroidManifest.xml:20:5-44
 MERGED from [androidx.appcompat:appcompat:1.6.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\9751129cf9a082d51cb0234e0f752002\transformed\appcompat-1.6.1\AndroidManifest.xml:20:5-44
 MERGED from [androidx.appcompat:appcompat:1.6.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\9751129cf9a082d51cb0234e0f752002\transformed\appcompat-1.6.1\AndroidManifest.xml:20:5-44
-MERGED from [com.github.jenly1314.WeChatQRCode:opencv:2.4.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\60667253d8c6eae60ffb3a52012aded9\transformed\jetified-opencv-2.4.0\AndroidManifest.xml:5:5-44
-MERGED from [com.github.jenly1314.WeChatQRCode:opencv:2.4.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\60667253d8c6eae60ffb3a52012aded9\transformed\jetified-opencv-2.4.0\AndroidManifest.xml:5:5-44
-MERGED from [com.github.jenly1314.WeChatQRCode:opencv-armv7a:2.4.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\c5a997a31b80348b90c2039e6716b92c\transformed\jetified-opencv-armv7a-2.4.0\AndroidManifest.xml:5:5-44
-MERGED from [com.github.jenly1314.WeChatQRCode:opencv-armv7a:2.4.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\c5a997a31b80348b90c2039e6716b92c\transformed\jetified-opencv-armv7a-2.4.0\AndroidManifest.xml:5:5-44
-MERGED from [com.github.jenly1314.WeChatQRCode:opencv-armv64:2.4.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\b28276371c44fee19fb5b72b610b5b0b\transformed\jetified-opencv-armv64-2.4.0\AndroidManifest.xml:5:5-44
-MERGED from [com.github.jenly1314.WeChatQRCode:opencv-armv64:2.4.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\b28276371c44fee19fb5b72b610b5b0b\transformed\jetified-opencv-armv64-2.4.0\AndroidManifest.xml:5:5-44
-MERGED from [com.github.jenly1314.WeChatQRCode:wechat-qrcode:2.4.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\388896681f92f200ccf0c74900955547\transformed\jetified-wechat-qrcode-2.4.0\AndroidManifest.xml:5:5-44
-MERGED from [com.github.jenly1314.WeChatQRCode:wechat-qrcode:2.4.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\388896681f92f200ccf0c74900955547\transformed\jetified-wechat-qrcode-2.4.0\AndroidManifest.xml:5:5-44
 MERGED from [com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\784103a80b8bfc22377175428c72406b\transformed\jetified-zxing-android-embedded-4.3.0\AndroidManifest.xml:20:5-44
 MERGED from [com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\784103a80b8bfc22377175428c72406b\transformed\jetified-zxing-android-embedded-4.3.0\AndroidManifest.xml:20:5-44
 MERGED from [com.google.android.gms:play-services-code-scanner:16.1.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\05a83c4539efab0ce46bdd89da22fc4e\transformed\jetified-play-services-code-scanner-16.1.0\AndroidManifest.xml:6:5-44
@@ -378,8 +379,6 @@ MERGED from [com.google.firebase:firebase-encoders-json:17.1.0] C:\Users\Adminis
 MERGED from [com.google.firebase:firebase-encoders-json:17.1.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\da671999a8888e82e2343f99bb813a4d\transformed\jetified-firebase-encoders-json-17.1.0\AndroidManifest.xml:19:5-21:41
 MERGED from [androidx.exifinterface:exifinterface:1.3.2] C:\Users\Administrator\.gradle\caches\8.13\transforms\caae814e64292528c6da37842e58329f\transformed\exifinterface-1.3.2\AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.exifinterface:exifinterface:1.3.2] C:\Users\Administrator\.gradle\caches\8.13\transforms\caae814e64292528c6da37842e58329f\transformed\exifinterface-1.3.2\AndroidManifest.xml:20:5-22:41
-MERGED from [com.github.jenly1314:logx:1.2.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\cfa3e19b82d78e2397eebe8d901d684f\transformed\jetified-logx-1.2.0\AndroidManifest.xml:6:5-44
-MERGED from [com.github.jenly1314:logx:1.2.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\cfa3e19b82d78e2397eebe8d901d684f\transformed\jetified-logx-1.2.0\AndroidManifest.xml:6:5-44
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\67b5f746dc5ca3f37a0531f2211c36b4\transformed\jetified-startup-runtime-1.1.1\AndroidManifest.xml:21:5-23:41
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\67b5f746dc5ca3f37a0531f2211c36b4\transformed\jetified-startup-runtime-1.1.1\AndroidManifest.xml:21:5-23:41
 MERGED from [androidx.tracing:tracing:1.0.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\b65b8f856d20f8fcb1147da66bb73469\transformed\jetified-tracing-1.0.0\AndroidManifest.xml:20:5-22:41
@@ -598,8 +597,6 @@ provider#androidx.startup.InitializationProvider
 ADDED from [androidx.emoji2:emoji2:1.2.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\e6824132ad21a51f5bd68e19997dca65\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:24:9-32:20
 MERGED from [androidx.lifecycle:lifecycle-process:2.4.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\279af7dcfba2409b9faa8b0c83df5340\transformed\jetified-lifecycle-process-2.4.1\AndroidManifest.xml:26:9-34:20
 MERGED from [androidx.lifecycle:lifecycle-process:2.4.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\279af7dcfba2409b9faa8b0c83df5340\transformed\jetified-lifecycle-process-2.4.1\AndroidManifest.xml:26:9-34:20
-MERGED from [com.github.jenly1314:logx:1.2.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\cfa3e19b82d78e2397eebe8d901d684f\transformed\jetified-logx-1.2.0\AndroidManifest.xml:9:9-17:20
-MERGED from [com.github.jenly1314:logx:1.2.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\cfa3e19b82d78e2397eebe8d901d684f\transformed\jetified-logx-1.2.0\AndroidManifest.xml:9:9-17:20
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\67b5f746dc5ca3f37a0531f2211c36b4\transformed\jetified-startup-runtime-1.1.1\AndroidManifest.xml:26:9-30:34
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\Administrator\.gradle\caches\8.13\transforms\67b5f746dc5ca3f37a0531f2211c36b4\transformed\jetified-startup-runtime-1.1.1\AndroidManifest.xml:26:9-30:34
 	tools:node
@@ -676,12 +673,6 @@ ADDED from [com.google.android.datatransport:transport-runtime:2.2.6] C:\Users\A
 		ADDED from [com.google.android.datatransport:transport-runtime:2.2.6] C:\Users\Administrator\.gradle\caches\8.13\transforms\b847fffca9bc620050c139515189b470\transformed\jetified-transport-runtime-2.2.6\AndroidManifest.xml:34:13-37
 	android:name
 		ADDED from [com.google.android.datatransport:transport-runtime:2.2.6] C:\Users\Administrator\.gradle\caches\8.13\transforms\b847fffca9bc620050c139515189b470\transformed\jetified-transport-runtime-2.2.6\AndroidManifest.xml:33:13-132
-meta-data#com.king.logx.initialize.LogXInitializer
-ADDED from [com.github.jenly1314:logx:1.2.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\cfa3e19b82d78e2397eebe8d901d684f\transformed\jetified-logx-1.2.0\AndroidManifest.xml:14:13-16:52
-	android:value
-		ADDED from [com.github.jenly1314:logx:1.2.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\cfa3e19b82d78e2397eebe8d901d684f\transformed\jetified-logx-1.2.0\AndroidManifest.xml:16:17-49
-	android:name
-		ADDED from [com.github.jenly1314:logx:1.2.0] C:\Users\Administrator\.gradle\caches\8.13\transforms\cfa3e19b82d78e2397eebe8d901d684f\transformed\jetified-logx-1.2.0\AndroidManifest.xml:15:17-72
 queries
 ADDED from [com.huawei.hms:dynamic-api:1.0.24.300] C:\Users\Administrator\.gradle\caches\8.13\transforms\6eb6f08d67cc6bb7fdaf7b6f1a2d2629\transformed\jetified-dynamic-api-1.0.24.300\AndroidManifest.xml:11:5-16:15
 MERGED from [com.huawei.hms:network-common:7.0.2.301] C:\Users\Administrator\.gradle\caches\8.13\transforms\415ceb041b7f60f53364aff6a3c7cd4d\transformed\jetified-network-common-7.0.2.301\AndroidManifest.xml:11:5-13:15

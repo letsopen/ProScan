@@ -2,9 +2,18 @@ package com.example.proscan.scanner.impl;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Rect;
+import android.os.Bundle;
+import android.view.ViewGroup;
 
 import com.example.proscan.scanner.BarcodeScanner;
+import com.example.proscan.R;
+import com.example.proscan.view.ViewfinderView;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.camera.view.PreviewView;
 import com.huawei.hms.hmsscankit.ScanUtil;
+import com.huawei.hms.hmsscankit.RemoteView;
 import com.huawei.hms.ml.scan.HmsScan;
 import com.huawei.hms.ml.scan.HmsScanAnalyzerOptions;
 
@@ -21,36 +30,10 @@ public class HuaweiBarcodeScanner implements BarcodeScanner {
     
     @Override
     public void startScan(Activity activity, ScanCallback callback) {
-        // 保存回调引用
         currentCallback = new WeakReference<>(callback);
-        
-        try {
-            // 配置扫码选项
-            HmsScanAnalyzerOptions options = new HmsScanAnalyzerOptions.Creator()
-                    .setHmsScanTypes(
-                            HmsScan.QRCODE_SCAN_TYPE,
-                            HmsScan.AZTEC_SCAN_TYPE,
-                            HmsScan.DATAMATRIX_SCAN_TYPE,
-                            HmsScan.PDF417_SCAN_TYPE,
-                            HmsScan.CODE128_SCAN_TYPE,
-                            HmsScan.CODE39_SCAN_TYPE,
-                            HmsScan.CODE93_SCAN_TYPE,
-                            HmsScan.CODABAR_SCAN_TYPE,
-                            HmsScan.EAN13_SCAN_TYPE,
-                            HmsScan.EAN8_SCAN_TYPE,
-                            HmsScan.ITF14_SCAN_TYPE,
-                            HmsScan.UPCCODE_A_SCAN_TYPE,
-                            HmsScan.UPCCODE_E_SCAN_TYPE
-                    )
-                    .create();
-            
-            // 启动扫码
-            ScanUtil.startScan(activity, REQUEST_CODE_SCAN, options);
-        } catch (Exception e) {
-            if (callback != null) {
-                callback.onError("启动扫码失败: " + e.getMessage());
-            }
-        }
+        com.example.proscan.scanner.ScanCallbackHolder.set(callback, "HUAWEI_SCAN_KIT");
+        Intent intent = new Intent(activity, UnifiedScanActivity.class);
+        activity.startActivity(intent);
     }
     
     /**
@@ -85,6 +68,102 @@ public class HuaweiBarcodeScanner implements BarcodeScanner {
         return false;
     }
     
+    public static class HuaweiScanActivity extends AppCompatActivity {
+        private RemoteView remoteView;
+        private ViewfinderView viewfinderView;
+        
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            supportRequestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+            getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                    android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            setContentView(R.layout.activity_mlkit_scan);
+            
+            viewfinderView = findViewById(R.id.viewfinder_view);
+            android.view.View root = findViewById(R.id.scan_root);
+            root.post(() -> {
+                int width = root.getWidth();
+                int height = root.getHeight();
+                int frameSize = (int) (Math.min(width, height) * 0.7);
+                int left = (width - frameSize) / 2;
+                int top = (height - frameSize) / 2;
+                Rect rect = new Rect(left, top, left + frameSize, top + frameSize);
+                
+                remoteView = new RemoteView.Builder()
+                        .setContext(this)
+                        .setBoundingBox(rect)
+                        .setFormat(HmsScan.ALL_SCAN_TYPE)
+                        .build();
+                
+                remoteView.setOnResultCallback(hmsScans -> {
+                    ScanCallback callback = currentCallback != null ? currentCallback.get() : null;
+                    if (hmsScans != null && hmsScans.length > 0) {
+                        HmsScan scan = hmsScans[0];
+                        if (scan != null && scan.getOriginalValue() != null && callback != null) {
+                            runOnUiThread(() -> {
+                                callback.onSuccess(scan.getOriginalValue());
+                                finish();
+                            });
+                        }
+                    }
+                });
+                
+                if (root instanceof android.view.ViewGroup) {
+                    android.view.ViewGroup vg = (android.view.ViewGroup) root;
+                    vg.addView(remoteView, 0, new ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                    ));
+                }
+            });
+        }
+        
+        @Override
+        protected void onStart() {
+            super.onStart();
+            if (remoteView != null) remoteView.onStart();
+        }
+        
+        @Override
+        protected void onResume() {
+            super.onResume();
+            if (remoteView != null) remoteView.onResume();
+        }
+        
+        @Override
+        protected void onPause() {
+            if (remoteView != null) remoteView.onPause();
+            super.onPause();
+        }
+        
+        @Override
+        protected void onStop() {
+            if (remoteView != null) remoteView.onStop();
+            super.onStop();
+        }
+        
+        @Override
+        protected void onDestroy() {
+            if (remoteView != null) remoteView.onDestroy();
+            ScanCallback callback = currentCallback != null ? currentCallback.get() : null;
+            if (isFinishing() && callback != null) {
+                // 避免泄漏
+                currentCallback = null;
+            }
+            super.onDestroy();
+        }
+        
+        @Override
+        public void onBackPressed() {
+            super.onBackPressed();
+            ScanCallback callback = currentCallback != null ? currentCallback.get() : null;
+            if (callback != null) {
+                callback.onCancel();
+            }
+        }
+    }
+    
     @Override
     public String getName() {
         return "Huawei Scan Kit";
@@ -115,4 +194,3 @@ public class HuaweiBarcodeScanner implements BarcodeScanner {
         }
     }
 }
-

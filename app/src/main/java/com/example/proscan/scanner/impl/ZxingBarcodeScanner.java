@@ -20,18 +20,10 @@ public class ZxingBarcodeScanner implements BarcodeScanner {
     
     @Override
     public void startScan(Activity activity, ScanCallback callback) {
-        // 保存回调引用（使用WeakReference避免内存泄漏）
         currentCallback = new WeakReference<>(callback);
-        
-        IntentIntegrator integrator = new IntentIntegrator(activity);
-        integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE);
-        integrator.setPrompt("请将二维码放入框内扫描");
-        integrator.setCameraId(0);
-        integrator.setBeepEnabled(false);
-        integrator.setBarcodeImageEnabled(true);
-        integrator.setOrientationLocked(false);
-        integrator.setCaptureActivity(CustomCaptureActivity.class);
-        integrator.initiateScan();
+        com.example.proscan.scanner.ScanCallbackHolder.set(callback, "ZXING");
+        Intent intent = new Intent(activity, UnifiedScanActivity.class);
+        activity.startActivity(intent);
     }
     
     /**

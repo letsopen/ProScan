@@ -6,7 +6,6 @@ import com.example.proscan.scanner.impl.GoogleCodeScanner;
 import com.example.proscan.scanner.impl.HuaweiBarcodeScanner;
 import com.example.proscan.scanner.impl.MlKitBarcodeScanner;
 import com.example.proscan.scanner.impl.ZxingBarcodeScanner;
-import com.example.proscan.scanner.impl.WeChatBarcodeScanner;
 
 /**
  * 扫码器工厂类
@@ -21,7 +20,6 @@ public class BarcodeScannerFactory {
         HUAWEI_SCAN_KIT,    // 华为 HMS Core Scan Kit
         GOOGLE_ML_KIT,      // Google ML Kit Code Scanner（需要 Google Play Services）
         ML_KIT_STANDALONE,  // ML Kit Barcode Scanning 独立版本（不需要 Google Play Services）
-        WECHAT_QRCODE,      // WeChat OpenCV
         ZXING               // ZXing
     }
     
@@ -52,8 +50,6 @@ public class BarcodeScannerFactory {
                 return new GoogleCodeScanner();
             case ML_KIT_STANDALONE:
                 return new MlKitBarcodeScanner();
-            case WECHAT_QRCODE:
-                return new WeChatBarcodeScanner();
             case ZXING:
                 return new ZxingBarcodeScanner();
             default:
@@ -78,13 +74,7 @@ public class BarcodeScannerFactory {
             return huaweiScanner;
         }
         
-        // 3. 尝试使用 WeChat OpenCV
-        WeChatBarcodeScanner wechatScanner = new WeChatBarcodeScanner();
-        if (wechatScanner.isAvailable(activity)) {
-            return wechatScanner;
-        }
-        
-        // 4. 降级到 ZXing
+        // 3. 降级到 ZXing
         return new ZxingBarcodeScanner();
     }
     
@@ -112,10 +102,6 @@ public class BarcodeScannerFactory {
             names.add(googleScanner.getName());
         }
         
-        WeChatBarcodeScanner wechatScanner = new WeChatBarcodeScanner();
-        if (wechatScanner.isAvailable(activity)) {
-            names.add(wechatScanner.getName());
-        }
         
         // ZXing
         ZxingBarcodeScanner zxingScanner = new ZxingBarcodeScanner();

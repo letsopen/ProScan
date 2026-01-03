@@ -48,11 +48,8 @@ public class MlKitBarcodeScanner implements BarcodeScanner {
     
     @Override
     public void startScan(Activity activity, ScanCallback callback) {
-        // 保存回调引用
-        MlKitBarcodeScannerHelper.setCallback(callback);
-        
-        // 启动扫码Activity
-        Intent intent = new Intent(activity, MlKitScanActivity.class);
+        com.example.proscan.scanner.ScanCallbackHolder.set(callback, "ML_KIT_STANDALONE");
+        Intent intent = new Intent(activity, UnifiedScanActivity.class);
         activity.startActivity(intent);
     }
     

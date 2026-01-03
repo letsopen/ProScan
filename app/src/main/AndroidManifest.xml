@@ -44,7 +44,15 @@
             android:windowSoftInputMode="stateAlwaysHidden"
             android:exported="false" />
         <activity
-            android:name=".scanner.impl.WeChatBarcodeScanner$WeChatScanActivity"
+            android:name=".scanner.impl.UnifiedScanActivity"
+            android:screenOrientation="fullSensor"
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
+            android:stateNotNeeded="true"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:windowSoftInputMode="stateAlwaysHidden"
+            android:exported="false" />
+        <activity
+            android:name=".scanner.impl.HuaweiBarcodeScanner$HuaweiScanActivity"
             android:screenOrientation="fullSensor"
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
             android:stateNotNeeded="true"

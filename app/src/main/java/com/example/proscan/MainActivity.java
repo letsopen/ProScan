@@ -220,6 +220,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onSuccess(String result) {
                     runOnUiThread(() -> {
                         if (result != null && !result.isEmpty()) {
+                            editTextUrl.setText("");
                             editTextUrl.setText(result);
                             dbHelper.addHistoryItem(result, "scan");
                             Toast.makeText(MainActivity.this, "扫描成功", Toast.LENGTH_SHORT).show();
