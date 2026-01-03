@@ -34,6 +34,9 @@ import android.widget.ImageView;
 import android.view.Window;
 import android.view.ViewGroup;
 import android.graphics.Matrix;
+import android.content.SharedPreferences;
+import android.widget.TextView;
+import androidx.appcompat.app.AlertDialog;
 
 public class MainActivity extends AppCompatActivity {
     private EditText editTextUrl;
@@ -41,8 +44,11 @@ public class MainActivity extends AppCompatActivity {
     private Button buttonPaste;
     private Button btnVisit;
     private ImageButton buttonHistory;
+    private TextView textTitle;
     private HistoryDbHelper dbHelper;
     private BarcodeScanner barcodeScanner;
+    private static final String PREFS = "proscan_prefs";
+    private static final String KEY_SCANNER_TYPE = "scanner_type";
 
     private static final int PERMISSION_REQUEST_CAMERA = 100;
 
@@ -57,9 +63,21 @@ public class MainActivity extends AppCompatActivity {
         buttonPaste = findViewById(R.id.buttonPaste);
         btnVisit = findViewById(R.id.btnVisit);
         buttonHistory = findViewById(R.id.buttonHistory);
+        textTitle = findViewById(R.id.textTitle);
 
-        // 初始化扫码器
-        barcodeScanner = BarcodeScannerFactory.getAvailableScanner(this);
+        BarcodeScannerFactory.ScannerType savedType = loadSelectedScannerType();
+        if (savedType != null) {
+            BarcodeScanner candidate = BarcodeScannerFactory.createScanner(savedType);
+            if (candidate.isAvailable(this)) {
+                barcodeScanner = candidate;
+            } else {
+                barcodeScanner = BarcodeScannerFactory.getAvailableScanner(this);
+            }
+        } else {
+            barcodeScanner = BarcodeScannerFactory.getAvailableScanner(this);
+        }
+
+        textTitle.setOnClickListener(v -> showScannerChoiceDialog());
 
         buttonScan.setOnClickListener(v -> {
             if (checkCameraPermission()) {
@@ -106,6 +124,46 @@ public class MainActivity extends AppCompatActivity {
 
         btnBarcode.setOnClickListener(v -> generateBarcode());
         btnQRCode.setOnClickListener(v -> generateQRCode());
+    }
+
+    private void showScannerChoiceDialog() {
+        BarcodeScannerFactory.ScannerType[] types = BarcodeScannerFactory.ScannerType.values();
+        String[] names = new String[types.length];
+        for (int i = 0; i < types.length; i++) {
+            BarcodeScanner s = BarcodeScannerFactory.createScanner(types[i]);
+            boolean available = s.isAvailable(this);
+            names[i] = s.getName() + (available ? "" : "（不可用）");
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("选择解码方案");
+        builder.setItems(names, (dialog, which) -> {
+            BarcodeScannerFactory.ScannerType type = types[which];
+            BarcodeScanner s = BarcodeScannerFactory.createScanner(type);
+            if (!s.isAvailable(this)) {
+                Toast.makeText(this, "当前设备不可用该方案", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            saveSelectedScannerType(type);
+            barcodeScanner = s;
+            Toast.makeText(this, "已切换到：" + s.getName(), Toast.LENGTH_SHORT).show();
+        });
+        builder.show();
+    }
+
+    private void saveSelectedScannerType(BarcodeScannerFactory.ScannerType type) {
+        SharedPreferences sp = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        sp.edit().putString(KEY_SCANNER_TYPE, type.name()).apply();
+    }
+
+    private BarcodeScannerFactory.ScannerType loadSelectedScannerType() {
+        SharedPreferences sp = getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        String name = sp.getString(KEY_SCANNER_TYPE, null);
+        if (name == null) return null;
+        try {
+            return BarcodeScannerFactory.ScannerType.valueOf(name);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private boolean checkCameraPermission() {

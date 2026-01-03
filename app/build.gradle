@@ -10,7 +10,7 @@ android {
         minSdkVersion 29  // 最低支持 Android 10 (API 29)
         targetSdkVersion 33
         versionCode 8
-        versionName "2.5"  // 版本更新：移除微信 OpenCV 二维码识别功能
+        versionName "2.7"  // 版本更新
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
         }
