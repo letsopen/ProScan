@@ -34,9 +34,13 @@ import com.google.zxing.MultiFormatReader;
 import com.google.zxing.Reader;
 import com.google.zxing.Result;
 import com.google.zxing.common.HybridBinarizer;
-import com.google.zxing.RGBLuminanceSource;
+import com.google.zxing.PlanarYUVLuminanceSource;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.DecodeHintType;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
+import java.util.Hashtable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,6 +53,9 @@ public class UnifiedScanActivity extends AppCompatActivity {
     private BarcodeScanner.ScanCallback callback;
     private String decoder;
     private boolean active = true;
+    private volatile boolean processing = false;
+    private com.google.mlkit.vision.barcode.BarcodeScanner mlkitScanner;
+    private MultiFormatReader zxingReader;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +69,43 @@ public class UnifiedScanActivity extends AppCompatActivity {
         cameraExecutor = Executors.newSingleThreadExecutor();
         callback = ScanCallbackHolder.get();
         decoder = ScanCallbackHolder.getDecoder();
+        mlkitScanner = BarcodeScanning.getClient(
+                new com.google.mlkit.vision.barcode.BarcodeScannerOptions.Builder()
+                        .setBarcodeFormats(
+                                Barcode.FORMAT_QR_CODE,
+                                Barcode.FORMAT_AZTEC,
+                                Barcode.FORMAT_DATA_MATRIX,
+                                Barcode.FORMAT_PDF417,
+                                Barcode.FORMAT_CODE_128,
+                                Barcode.FORMAT_CODE_39,
+                                Barcode.FORMAT_CODE_93,
+                                Barcode.FORMAT_CODABAR,
+                                Barcode.FORMAT_EAN_13,
+                                Barcode.FORMAT_EAN_8,
+                                Barcode.FORMAT_ITF,
+                                Barcode.FORMAT_UPC_A,
+                                Barcode.FORMAT_UPC_E
+                        ).build()
+        );
+        zxingReader = new MultiFormatReader();
+        Hashtable<DecodeHintType, Object> hints = new Hashtable<>();
+        hints.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
+        hints.put(DecodeHintType.POSSIBLE_FORMATS, Arrays.asList(
+                BarcodeFormat.QR_CODE,
+                BarcodeFormat.AZTEC,
+                BarcodeFormat.DATA_MATRIX,
+                BarcodeFormat.PDF_417,
+                BarcodeFormat.CODE_128,
+                BarcodeFormat.CODE_39,
+                BarcodeFormat.CODE_93,
+                BarcodeFormat.CODABAR,
+                BarcodeFormat.EAN_13,
+                BarcodeFormat.EAN_8,
+                BarcodeFormat.ITF,
+                BarcodeFormat.UPC_A,
+                BarcodeFormat.UPC_E
+        ));
+        zxingReader.setHints(hints);
         startCamera();
     }
 
@@ -99,52 +143,43 @@ public class UnifiedScanActivity extends AppCompatActivity {
 
     private void analyze(@NonNull ImageProxy image) {
         if (!active) { image.close(); return; }
-        Bitmap bitmap = toBitmap(image);
-        if (bitmap != null) {
-            if ("ML_KIT_STANDALONE".equals(decoder)) {
-                processMlkit(image, bitmap);
-            } else if ("HUAWEI_SCAN_KIT".equals(decoder)) {
+        if (processing) { image.close(); return; }
+        processing = true;
+        if ("ML_KIT_STANDALONE".equals(decoder)) {
+            processMlkit(image);
+        } else if ("HUAWEI_SCAN_KIT".equals(decoder)) {
+            Bitmap bitmap = toBitmap(image);
+            if (bitmap != null) {
                 processHuawei(bitmap);
-            } else if ("ZXING".equals(decoder)) {
-                processZxing(bitmap);
-            } else {
-                processMlkit(image, bitmap);
             }
+            processing = false;
+            image.close();
+        } else if ("ZXING".equals(decoder)) {
+            processZxing(image);
+        } else {
+            processMlkit(image);
         }
-        image.close();
     }
 
-    private void processMlkit(ImageProxy image, Bitmap bitmap) {
+    private void processMlkit(ImageProxy image) {
         InputImage inputImage = InputImage.fromMediaImage(
                 image.getImage(),
                 image.getImageInfo().getRotationDegrees()
         );
-        com.google.mlkit.vision.barcode.BarcodeScanner scanner = BarcodeScanning.getClient(
-                new com.google.mlkit.vision.barcode.BarcodeScannerOptions.Builder()
-                        .setBarcodeFormats(
-                                Barcode.FORMAT_QR_CODE,
-                                Barcode.FORMAT_AZTEC,
-                                Barcode.FORMAT_DATA_MATRIX,
-                                Barcode.FORMAT_PDF417,
-                                Barcode.FORMAT_CODE_128,
-                                Barcode.FORMAT_CODE_39,
-                                Barcode.FORMAT_CODE_93,
-                                Barcode.FORMAT_CODABAR,
-                                Barcode.FORMAT_EAN_13,
-                                Barcode.FORMAT_EAN_8,
-                                Barcode.FORMAT_ITF,
-                                Barcode.FORMAT_UPC_A,
-                                Barcode.FORMAT_UPC_E
-                        ).build()
-        );
-        scanner.process(inputImage)
+        mlkitScanner.process(inputImage)
                 .addOnSuccessListener(barcodes -> {
                     if (!barcodes.isEmpty() && active) {
                         String value = barcodes.get(0).getRawValue();
                         if (value != null) emitSuccess(value);
                     }
                 })
-                .addOnFailureListener(e -> {});
+                .addOnFailureListener(e -> {
+                    // ignore
+                })
+                .addOnCompleteListener(task -> {
+                    processing = false;
+                    image.close();
+                });
     }
 
     private void processHuawei(Bitmap bitmap) {
@@ -158,20 +193,30 @@ public class UnifiedScanActivity extends AppCompatActivity {
         }
     }
 
-    private void processZxing(Bitmap bitmap) {
-        int w = bitmap.getWidth();
-        int h = bitmap.getHeight();
-        int[] pixels = new int[w * h];
-        bitmap.getPixels(pixels, 0, w, 0, 0, w, h);
-        RGBLuminanceSource source = new RGBLuminanceSource(w, h, pixels);
-        BinaryBitmap bin = new BinaryBitmap(new HybridBinarizer(source));
-        Reader reader = new MultiFormatReader();
+    private void processZxing(ImageProxy image) {
         try {
-            Result result = reader.decode(bin);
+            byte[] nv21 = yuv420ToNv21(image);
+            int width = image.getWidth();
+            int height = image.getHeight();
+            int rotation = image.getImageInfo().getRotationDegrees();
+            byte[] rotated = rotateNv21(nv21, width, height, rotation);
+            int rw = rotation == 90 || rotation == 270 ? height : width;
+            int rh = rotation == 90 || rotation == 270 ? width : height;
+            PlanarYUVLuminanceSource source = new PlanarYUVLuminanceSource(
+                    rotated, rw, rh, 0, 0, rw, rh, false
+            );
+            BinaryBitmap bin = new BinaryBitmap(new HybridBinarizer(source));
+            Result result = zxingReader.decodeWithState(bin);
             if (result != null && result.getText() != null && active) {
                 emitSuccess(result.getText());
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            // no result, continue
+        } finally {
+            zxingReader.reset();
+            processing = false;
+            image.close();
+        }
     }
 
     private void emitSuccess(String value) {
@@ -235,11 +280,73 @@ public class UnifiedScanActivity extends AppCompatActivity {
         }
         return nv21;
     }
+    
+    private byte[] rotateNv21(byte[] nv21, int width, int height, int rotationDegrees) {
+        if (rotationDegrees == 0) return nv21;
+        byte[] output;
+        switch (rotationDegrees) {
+            case 90:
+                output = new byte[nv21.length];
+                int i = 0;
+                for (int x = 0; x < width; x++) {
+                    for (int y = height - 1; y >= 0; y--) {
+                        output[i++] = nv21[y * width + x];
+                    }
+                }
+                int uvHeight = height / 2;
+                for (int x = 0; x < width; x += 2) {
+                    for (int y = uvHeight - 1; y >= 0; y--) {
+                        int pos = width * height + y * width + x;
+                        output[i++] = nv21[pos];       // V
+                        output[i++] = nv21[pos + 1];   // U
+                    }
+                }
+                return output;
+            case 180:
+                output = new byte[nv21.length];
+                int ySize = width * height;
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x++) {
+                        output[y * width + x] = nv21[ySize - 1 - (y * width + x)];
+                    }
+                }
+                int uvSize = width * height / 2;
+                int base = ySize;
+                for (int k = 0; k < uvSize; k += 2) {
+                    output[base + k] = nv21[base + uvSize - 2 - k];
+                    output[base + k + 1] = nv21[base + uvSize - 1 - k];
+                }
+                return output;
+            case 270:
+                // 270 = rotate 90 counterclockwise
+                output = new byte[nv21.length];
+                int idx = 0;
+                for (int x = width - 1; x >= 0; x--) {
+                    for (int y = 0; y < height; y++) {
+                        output[idx++] = nv21[y * width + x];
+                    }
+                }
+                int uvH = height / 2;
+                for (int x = width - 2; x >= 0; x -= 2) {
+                    for (int y = 0; y < uvH; y++) {
+                        int pos = width * height + y * width + x;
+                        output[idx++] = nv21[pos];       // V
+                        output[idx++] = nv21[pos + 1];   // U
+                    }
+                }
+                return output;
+            default:
+                return nv21;
+        }
+    }
 
     @Override
     protected void onDestroy() {
         if (cameraExecutor != null) cameraExecutor.shutdown();
         if (cameraProvider != null) cameraProvider.unbindAll();
+        if (mlkitScanner != null) {
+            try { mlkitScanner.close(); } catch (Exception ignored) {}
+        }
         if (isFinishing()) ScanCallbackHolder.clear();
         super.onDestroy();
     }
