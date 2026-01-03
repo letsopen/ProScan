@@ -43,7 +43,14 @@
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:windowSoftInputMode="stateAlwaysHidden"
             android:exported="false" />
-        <!-- 微信 OpenCV 二维码识别 Activity 已移除，因为 OpenCV Android 依赖不可用 -->
+        <activity
+            android:name=".scanner.impl.WeChatBarcodeScanner$WeChatScanActivity"
+            android:screenOrientation="fullSensor"
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
+            android:stateNotNeeded="true"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:windowSoftInputMode="stateAlwaysHidden"
+            android:exported="false" />
         <activity
             android:name=".HistoryActivity"
             android:exported="false" />

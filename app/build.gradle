@@ -11,6 +11,9 @@ android {
         targetSdkVersion 33
         versionCode 8
         versionName "2.5"  // 版本更新：移除微信 OpenCV 二维码识别功能
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
     }
 
     signingConfigs {
@@ -40,6 +43,11 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    
+    implementation 'com.github.jenly1314.WeChatQRCode:opencv:2.4.0'
+    implementation 'com.github.jenly1314.WeChatQRCode:opencv-armv7a:2.4.0'
+    implementation 'com.github.jenly1314.WeChatQRCode:opencv-armv64:2.4.0'
+    implementation 'com.github.jenly1314.WeChatQRCode:wechat-qrcode:2.4.0'
     
     // 二维码扫描 - ZXing（备用方案）
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
