@@ -133,15 +133,43 @@ public class MainActivity extends AppCompatActivity {
                 typeList.add(t);
             }
         }
-        String[] names = new String[typeList.size()];
+        java.util.List<CharSequence> names = new java.util.ArrayList<>();
+        java.util.List<Boolean> availables = new java.util.ArrayList<>();
+        String currentName = barcodeScanner != null ? barcodeScanner.getName() : null;
+        int highlightColor = textTitle != null ? textTitle.getCurrentTextColor() : 0xFF2196F3;
         for (int i = 0; i < typeList.size(); i++) {
             BarcodeScanner s = BarcodeScannerFactory.createScanner(typeList.get(i));
             boolean available = s.isAvailable(this);
-            names[i] = s.getName() + (available ? "" : "（不可用）");
+            String base = s.getName() + (available ? "" : "（不可用）");
+            android.text.SpannableString ss = new android.text.SpannableString(base);
+            if (currentName != null && currentName.equals(s.getName())) {
+                ss.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, base.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                ss.setSpan(new android.text.style.ForegroundColorSpan(highlightColor), 0, base.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            if (!available) {
+                ss.setSpan(new android.text.style.ForegroundColorSpan(0xFF9E9E9E), 0, base.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            names.add(ss);
+            availables.add(available);
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("选择解码方案");
-        builder.setItems(names, (dialog, which) -> {
+        android.widget.ListAdapter adapter = new android.widget.BaseAdapter() implements android.widget.ListAdapter {
+            @Override public int getCount() { return names.size(); }
+            @Override public Object getItem(int position) { return names.get(position); }
+            @Override public long getItemId(int position) { return position; }
+            @Override public android.view.View getView(int position, android.view.View convertView, android.view.ViewGroup parent) {
+                android.widget.TextView tv = convertView instanceof android.widget.TextView ? (android.widget.TextView) convertView : new android.widget.TextView(MainActivity.this);
+                tv.setPadding((int)(getResources().getDisplayMetrics().density*20), (int)(getResources().getDisplayMetrics().density*12), (int)(getResources().getDisplayMetrics().density*20), (int)(getResources().getDisplayMetrics().density*12));
+                tv.setText(names.get(position));
+                tv.setEnabled(availables.get(position));
+                if (!availables.get(position)) tv.setAlpha(0.5f); else tv.setAlpha(1f);
+                return tv;
+            }
+            @Override public boolean areAllItemsEnabled() { return false; }
+            @Override public boolean isEnabled(int position) { return availables.get(position); }
+        };
+        builder.setAdapter(adapter, (dialog, which) -> {
             BarcodeScannerFactory.ScannerType type = typeList.get(which);
             BarcodeScanner s = BarcodeScannerFactory.createScanner(type);
             if (!s.isAvailable(this)) {
