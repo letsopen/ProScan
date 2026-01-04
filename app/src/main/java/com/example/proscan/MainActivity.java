@@ -154,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("选择解码方案");
-        android.widget.ListAdapter adapter = new android.widget.BaseAdapter() implements android.widget.ListAdapter {
+        android.widget.ListAdapter adapter = new android.widget.BaseAdapter() {
             @Override public int getCount() { return names.size(); }
             @Override public Object getItem(int position) { return names.get(position); }
             @Override public long getItemId(int position) { return position; }
