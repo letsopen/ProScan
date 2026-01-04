@@ -127,17 +127,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showScannerChoiceDialog() {
-        BarcodeScannerFactory.ScannerType[] types = BarcodeScannerFactory.ScannerType.values();
-        String[] names = new String[types.length];
-        for (int i = 0; i < types.length; i++) {
-            BarcodeScanner s = BarcodeScannerFactory.createScanner(types[i]);
+        java.util.List<BarcodeScannerFactory.ScannerType> typeList = new java.util.ArrayList<>();
+        for (BarcodeScannerFactory.ScannerType t : BarcodeScannerFactory.ScannerType.values()) {
+            if (t != BarcodeScannerFactory.ScannerType.GOOGLE_ML_KIT) {
+                typeList.add(t);
+            }
+        }
+        String[] names = new String[typeList.size()];
+        for (int i = 0; i < typeList.size(); i++) {
+            BarcodeScanner s = BarcodeScannerFactory.createScanner(typeList.get(i));
             boolean available = s.isAvailable(this);
             names[i] = s.getName() + (available ? "" : "（不可用）");
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("选择解码方案");
         builder.setItems(names, (dialog, which) -> {
-            BarcodeScannerFactory.ScannerType type = types[which];
+            BarcodeScannerFactory.ScannerType type = typeList.get(which);
             BarcodeScanner s = BarcodeScannerFactory.createScanner(type);
             if (!s.isAvailable(this)) {
                 Toast.makeText(this, "当前设备不可用该方案", Toast.LENGTH_SHORT).show();
