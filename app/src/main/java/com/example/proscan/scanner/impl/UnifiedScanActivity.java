@@ -43,6 +43,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class UnifiedScanActivity extends AppCompatActivity {
+    private static final String TAG = "UnifiedScanActivity";
     private PreviewView previewView;
     private ViewfinderView viewfinderView;
     private ProcessCameraProvider cameraProvider;
@@ -230,33 +231,84 @@ public class UnifiedScanActivity extends AppCompatActivity {
     }
 
     /**
-     * 华为 HMS：使用 HmsScanAnalyzer 直接分析 YUV 帧的 NV21 字节流（MLFrame.fromByteBuffer）
-     * 显式 setPhotoMode(false) 避免走静态图慢速管线；
-     * quadrant 传入相机旋转角度，保证竖排/横排条码都能命中
+     * 华为 HMS：优先走 HmsScanAnalyzer + NV21 字节流（scanplus 增强 AI，YUV 直读）。
+     * 远程解码链路不可用（HMS 服务未就绪/IPC 失败）或连续多帧无果时，
+     * 自动回退到 ScanUtil.decodeWithBitmap(Bitmap) 保底路径（该路径已在旧版本验证可用）。
      */
     private void processHuaweiFrame(ImageProxy image) {
+        boolean handled = false;
         try {
-            if (image.getFormat() != ImageFormat.YUV_420_888 || image.getPlanes().length < 3) {
-                return;
-            }
-            byte[] nv21 = yuv420ToNv21(image);
-            int rotation = image.getImageInfo().getRotationDegrees();
-            // MLFrame 相机流入口：writeByteBufferData(buf, format, w, h) + setQuadrant(rotation/90)
-            MLFrame frame = new MLFrame.Creator()
-                    .writeByteBufferData(ByteBuffer.wrap(nv21), ImageFormat.NV21,
-                            image.getWidth(), image.getHeight())
-                    .setQuadrant(rotation / 90)
-                    .create();
-            android.util.SparseArray<HmsScan> scans = hmsAnalyzer.analyseFrame(frame);
-            if (scans != null && scans.size() > 0 && active) {
-                String value = scans.valueAt(0).getOriginalValue();
-                if (value != null) emitSuccess(value);
+            if (image.getFormat() == ImageFormat.YUV_420_888 && image.getPlanes().length >= 3) {
+                byte[] nv21 = yuv420ToNv21(image);
+                int rotation = image.getImageInfo().getRotationDegrees();
+                // MLFrame 相机流入口：writeByteBufferData(buf, format, w, h) + setQuadrant(rotation/90)
+                MLFrame frame = new MLFrame.Creator()
+                        .writeByteBufferData(ByteBuffer.wrap(nv21), ImageFormat.NV21,
+                                image.getWidth(), image.getHeight())
+                        .setQuadrant(rotation / 90)
+                        .create();
+                android.util.SparseArray<HmsScan> scans = hmsAnalyzer.analyseFrame(frame);
+                if (scans != null && scans.size() > 0 && active) {
+                    String value = scans.valueAt(0).getOriginalValue();
+                    if (value != null) {
+                        handled = true;
+                        emitSuccess(value);
+                    }
+                }
             }
         } catch (Throwable t) {
-            // 单帧失败继续下一帧
-        } finally {
-            processing = false;
-            image.close();
+            android.util.Log.w(TAG, "HMS analyzer frame failed: " + t);
+        }
+
+        // 回退路径：HmsScanAnalyzer 持续无结果（可能远程解码服务不可用）时，
+        // 用已验证可用的 Bitmap 静态解码路径保底
+        if (!handled && active) {
+            try {
+                Bitmap bitmap = toBitmap(image);
+                if (bitmap != null) {
+                    HmsScanAnalyzerOptions options = new HmsScanAnalyzerOptions.Creator()
+                            .setHmsScanTypes(HmsScan.ALL_SCAN_TYPE)
+                            .setPhotoMode(false)
+                            .setParseResult(true)
+                            .create();
+                    HmsScan[] scans = com.huawei.hms.hmsscankit.ScanUtil
+                            .decodeWithBitmap(getApplicationContext(), bitmap, options);
+                    if (scans != null && scans.length > 0 && active) {
+                        String value = scans[0].getOriginalValue();
+                        if (value != null) emitSuccess(value);
+                    }
+                }
+            } catch (Throwable t) {
+                android.util.Log.w(TAG, "HMS bitmap fallback failed: " + t);
+            }
+        }
+        processing = false;
+        image.close();
+    }
+
+    /** YUV_420_888 -> JPEG -> Bitmap（华为回退路径用，保证旋转后方向正确） */
+    private Bitmap toBitmap(ImageProxy image) {
+        try {
+            if (image.getFormat() != ImageFormat.YUV_420_888 || image.getPlanes().length < 3) return null;
+            byte[] nv21 = yuv420ToNv21(image);
+            YuvImage yuvImage = new YuvImage(nv21, ImageFormat.NV21, image.getWidth(), image.getHeight(), null);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            yuvImage.compressToJpeg(new Rect(0, 0, image.getWidth(), image.getHeight()), 90, out);
+            byte[] jpegBytes = out.toByteArray();
+            Bitmap bitmap = android.graphics.BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.length);
+            // 按相机旋转角摆正，否则竖屏时 HMS 看到的条码是横躺的
+            int rotation = image.getImageInfo().getRotationDegrees();
+            if (rotation != 0) {
+                android.graphics.Matrix m = new android.graphics.Matrix();
+                m.postRotate(rotation);
+                Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0,
+                        bitmap.getWidth(), bitmap.getHeight(), m, true);
+                if (rotated != bitmap) bitmap.recycle();
+                bitmap = rotated;
+            }
+            return bitmap;
+        } catch (Exception e) {
+            return null;
         }
     }
 
