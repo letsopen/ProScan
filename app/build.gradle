@@ -19,11 +19,13 @@ android {
     signingConfigs {
         release {
             // 签名信息通过环境变量或 gradle.properties 传入，避免密码写进代码库
+            // 注意：路径相对于项目根目录解析（rootProject.file），例如 key/default
             // 例如：
             //   ./gradlew assembleRelease \
-            //     -PPROSCAN_STORE_FILE=../key/default \
+            //     -PPROSCAN_STORE_FILE=key/default \
             //     -PPROSCAN_STORE_PASSWORD=... -PPROSCAN_KEY_ALIAS=... -PPROSCAN_KEY_PASSWORD=...
-            storeFile file(System.getenv("PROSCAN_STORE_FILE") ?: project.findProperty("PROSCAN_STORE_FILE") ?: "your_keystore.jks")
+            def storePath = System.getenv("PROSCAN_STORE_FILE") ?: (project.findProperty("PROSCAN_STORE_FILE") ?: "your_keystore.jks")
+            storeFile rootProject.file(storePath)
             storePassword System.getenv("PROSCAN_STORE_PASSWORD") ?: (project.findProperty("PROSCAN_STORE_PASSWORD") ?: "")
             keyAlias System.getenv("PROSCAN_KEY_ALIAS") ?: (project.findProperty("PROSCAN_KEY_ALIAS") ?: "")
             keyPassword System.getenv("PROSCAN_KEY_PASSWORD") ?: (project.findProperty("PROSCAN_KEY_PASSWORD") ?: "")
