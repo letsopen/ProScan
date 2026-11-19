@@ -27,11 +27,6 @@
    - ✅ minSdk 24+，完全兼容 API 30
    - ✅ 原生支持 YUV_420_888 与 Bitmap 直接解码
 
-4. **BoofCV**（`org.boofcv:boofcv-recognition/android:0.44`）
-   - ✅ 纯 Java 实现，无 ABI 限制
-   - ✅ 要求 Java 8+，项目使用 Java 11 编译，兼容
-   - ⚠️ 已排除桌面端/Swing 传递依赖（boofcv-jmain / visualize / JTransforms-swing 等）
-
 5. **ML Kit**（`com.google.mlkit:barcode-scanning:17.3.0`）
    - ✅ 最低支持 API 21，完全兼容 API 30
    - ✅ 模型打包在应用中，完全离线
@@ -49,23 +44,18 @@
 1. **华为 HMS 扫码** - ✅ 支持（华为/荣耀设备，需 HMS Core）
 2. **ML Kit 独立版本扫码** - ✅ 支持（默认引擎，完全离线）
 3. **ZXing-CPP 扫码** - ✅ 支持（全码制，YUV 直读 + Bitmap 解码）
-4. **BoofCV 扫码** - ✅ 支持（QR / MicroQR / Aztec）
-5. **二维码/条形码生成** - ✅ 支持（zxing-core `MultiFormatWriter`）
+4. **二维码/条形码生成** - ✅ 支持（zxing-core `MultiFormatWriter`）
 
 ### 引擎降级链
 
 初始化未选择引擎或所选引擎不可用时，自动回落到默认引擎 **ML Kit 独立版本（Google MLK）**。
-运行时自动降级顺序：华为 HMS → Google MLK → ZXING-CPP → boofCV。
+运行时自动降级顺序：华为 HMS → Google MLK → ZXING-CPP。
 
 ## 已知限制
 
 1. **ZXing-CPP 仅支持识别**
    - `io.github.zxing-cpp:android` 未暴露生成 API（C++ 侧 `WriteBarcode` 尚未封装到 Android）
    - 因此生成功能保留 `com.google.zxing:core:3.5.2`
-
-2. **BoofCV 码制覆盖**
-   - 仅覆盖 QR / MicroQR / Aztec 三种二维条码，一维码与 PDF417/DataMatrix 不支持
-   - 作为最后的降级引擎使用
 
 3. **CameraX 原子组版本**
    - ML Kit 17.3.0 与 zxing-cpp 2.3.0 均传递依赖 CameraX 1.4.1

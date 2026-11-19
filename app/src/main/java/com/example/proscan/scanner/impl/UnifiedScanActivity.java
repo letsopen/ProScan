@@ -29,7 +29,6 @@ import com.google.mlkit.vision.common.InputImage;
 import com.huawei.hms.hmsscankit.ScanUtil;
 import com.huawei.hms.ml.scan.HmsScan;
 import com.huawei.hms.ml.scan.HmsScanAnalyzerOptions;
-import com.example.proscan.scanner.decoder.BoofCvFrameDecoder;
 import com.example.proscan.scanner.decoder.FrameDecoder;
 import com.example.proscan.scanner.decoder.ZxingCppFrameDecoder;
 
@@ -80,11 +79,9 @@ public class UnifiedScanActivity extends AppCompatActivity {
                                 Barcode.FORMAT_UPC_E
                         ).build()
         );
-        // 按当前引擎创建帧解码器（ZXing-CPP / BoofCV 共用 FrameDecoder 接口）
+        // 按当前引擎创建帧解码器
         if ("ZXING_CPP".equals(decoder)) {
             frameDecoder = new ZxingCppFrameDecoder();
-        } else if ("BOOFCV".equals(decoder)) {
-            frameDecoder = new BoofCvFrameDecoder();
         }
         startCamera();
     }
@@ -136,14 +133,12 @@ public class UnifiedScanActivity extends AppCompatActivity {
             image.close();
         } else if ("ZXING_CPP".equals(decoder)) {
             processWithFrameDecoder(image);
-        } else if ("BOOFCV".equals(decoder)) {
-            processWithFrameDecoder(image);
         } else {
             processMlkit(image);
         }
     }
 
-    /** ZXing-CPP / BoofCV 共用：FrameDecoder 内部负责 close(image) 与 processing 复位 */
+    /** ZXing-CPP：FrameDecoder 内部负责 close(image) 与 processing 复位 */
     private void processWithFrameDecoder(ImageProxy image) {
         try {
             String result = frameDecoder.decode(image);

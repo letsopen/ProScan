@@ -60,20 +60,6 @@ dependencies {
     // ZXing core（仅用于生成二维码/条形码；识别引擎已改用 ZXing-CPP）
     implementation 'com.google.zxing:core:3.5.2'
 
-    // BoofCV（仅扫码核心模块；boofcv-android 为 aar，排除桌面端/Swing 传递依赖）
-    implementation('org.boofcv:boofcv-recognition:0.44')
-    implementation('org.boofcv:boofcv-android:0.44') {
-        exclude group: 'org.boofcv', module: 'boofcv-jmain'
-        exclude group: 'org.boofcv', module: 'boofcv-swing'
-        exclude group: 'org.boofcv', module: 'visualize'
-    }
-    configurations.all {
-        // BoofCV 桌面端可选传递依赖，Android 端无用
-        exclude group: 'org.python'
-        exclude group: 'com.github.wendykierp', module: 'JLargeArrays-swing'
-        exclude group: 'com.github.wendykierp', module: 'JTransforms-swing'
-    }
-
     // CameraX（用于相机预览与图像分析）
     // 注：ML Kit 17.3.0 / zxing-cpp 2.3.0 传递依赖会将 CameraX 原子组升级至 1.4.1（要求 compileSdk 34），
     // 因此本项目 compileSdk/targetSdk 已升级到 34

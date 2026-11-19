@@ -7,7 +7,6 @@
 1. **华为 HMS Core Scan Kit**（华为设备优先方案）
 2. **ML Kit Barcode Scanning 独立版本**（默认引擎，不需要 Google Play Services）
 3. **ZXing-CPP**（原生 C++ 实现，全码制，性能优秀）
-4. **BoofCV**（纯 Java 实现，专注二维条码 QR/MicroQR/Aztec）
 
 > Google ML Kit Code Scanner（`play-services-code-scanner`，依赖 Google Play Services）已于 v2.9 移除。
 
@@ -42,7 +41,6 @@
 | `HuaweiBarcodeScanner` | `Huawei HMS` | 基于 HMS Core Scan Kit，`UnifiedScanActivity` 中走 `ScanUtil.decodeWithBitmap` |
 | `MlKitBarcodeScanner` | `Google MLK` | **默认引擎**。ML Kit 17.3.0 独立版，模型打包在应用内，完全离线 |
 | `ZxingCppBarcodeScanner` | `ZXING-CPP` | zxing-cpp 2.3.0（`io.github.zxing-cpp:android`），JNI 原生实现 |
-| `BoofCvBarcodeScanner` | `boofCV` | BoofCV 0.44 纯 Java，支持 QR / MicroQR / Aztec |
 
 #### `MlKitBarcodeScanner`（Google MLK，默认）
 - 不需要 Google Play Services（模型打包在应用中，约 2-3MB）
@@ -57,12 +55,6 @@
 - 开启 `tryHarder / tryRotate / tryInvert / tryDownscale`，全码制覆盖（QR/MicroQR/RMQR/Aztec/DataMatrix/PDF417/一维码全套）
 - 注意：该库仅提供**识别**，不含生成 API
 
-#### `BoofCvBarcodeScanner`（boofCV）
-- 仅引入 `boofcv-recognition` + `boofcv-android` 两个核心模块（已排除桌面端/Swing 传递依赖）
-- 支持 QR Code / Micro QR / Aztec 三种二维条码
-- **内存复用**：相机帧的 Y plane 直接拷入复用的 `GrayU8` 缓冲区（仅分辨率变化时重新分配），避免每帧 GC 卡顿
-- 位图路径使用 `ConvertBitmap.bitmapToGray`，同样复用 `GrayU8` + `DogArray_I8` 存储
-
 #### `HuaweiBarcodeScanner`（Huawei HMS）
 - 基于华为 HMS Core Scan Kit
 - 在华为/荣耀设备上优先可用（`isAvailable` 检查厂商 + HMS Core）
@@ -76,15 +68,14 @@
   - `ML_KIT_STANDALONE` → ML Kit `InputImage`
   - `HUAWEI_SCAN_KIT` → YUV→JPEG→Bitmap → `ScanUtil.decodeWithBitmap`
   - `ZXING_CPP` → `ZxingCppFrameDecoder`
-  - `BOOFCV` → `BoofCvFrameDecoder`
 - `volatile processing` 背压控制 + `active` 防重复回调
 
 ### 工厂类
 
 #### `BarcodeScannerFactory`
-- `ScannerType` 枚举：`HUAWEI_SCAN_KIT / ML_KIT_STANDALONE / ZXING_CPP / BOOFCV`，每个枚举携带展示标签（`getLabel()`）
+- `ScannerType` 枚举：`HUAWEI_SCAN_KIT / ML_KIT_STANDALONE / ZXING_CPP`，每个枚举携带展示标签（`getLabel()`）
 - `getDefaultScanner()`: 默认 ML Kit 独立版
-- `getAvailableScanner(Activity)`: 自动降级 华为 → ML Kit → ZXing-CPP → BoofCV
+- `getAvailableScanner(Activity)`: 自动降级 华为 → ML Kit → ZXing-CPP
 - `createScanner(ScannerType)`: 创建指定类型扫码器
 
 ## 引擎切换交互
@@ -125,8 +116,6 @@ BarcodeScanner scanner = BarcodeScannerFactory.createScanner(
     BarcodeScannerFactory.ScannerType.ML_KIT_STANDALONE);   // Google MLK（默认）
 BarcodeScanner scanner = BarcodeScannerFactory.createScanner(
     BarcodeScannerFactory.ScannerType.ZXING_CPP);           // ZXING-CPP
-BarcodeScanner scanner = BarcodeScannerFactory.createScanner(
-    BarcodeScannerFactory.ScannerType.BOOFCV);              // boofCV
 ```
 
 ## 配置
@@ -142,19 +131,6 @@ implementation 'io.github.zxing-cpp:android:2.3.0'
 
 // ZXing core（仅用于生成二维码/条形码，识别引擎已切换）
 implementation 'com.google.zxing:core:3.5.2'
-
-// BoofCV（仅扫码核心模块，排除桌面端/Swing 传递依赖）
-implementation('org.boofcv:boofcv-recognition:0.44')
-implementation('org.boofcv:boofcv-android:0.44') {
-    exclude group: 'org.boofcv', module: 'boofcv-jmain'
-    exclude group: 'org.boofcv', module: 'boofcv-swing'
-    exclude group: 'org.boofcv', module: 'visualize'
-}
-configurations.all {
-    exclude group: 'org.python'
-    exclude group: 'com.github.wendykierp', module: 'JLargeArrays-swing'
-    exclude group: 'com.github.wendykierp', module: 'JTransforms-swing'
-}
 
 // CameraX（注意：ML Kit 17.3.0 / zxing-cpp 2.3.0 会将 CameraX 原子组升级至 1.4.1，
 // 因此 compileSdk/targetSdk 需 >= 34）
@@ -186,8 +162,8 @@ zxing-cpp 的 JNI 库（`libzxingcpp_android.so`）按此配置打入对应 ABI 
 
 ## 引擎能力对比
 
-| 能力 | Huawei HMS | Google MLK | ZXING-CPP | boofCV |
-|---|---|---|---|---|
+| 能力 | Huawei HMS | Google MLK | ZXING-CPP |
+|---|---|---|---|
 | 相机实时帧 | ✅ | ✅ | ✅（YUV 直读） | ✅（Y plane→GrayU8 复用） |
 | 相册 Bitmap | ✅ | ✅ | ✅ | ✅ |
 | 完全离线 | ❌（需 HMS Core） | ✅ | ✅ | ✅ |
@@ -200,7 +176,6 @@ zxing-cpp 的 JNI 库（`libzxingcpp_android.so`）按此配置打入对应 ABI 
 
 `app/proguard-rules.pro` 已包含：
 - `zxingcpp.**` keep（JNI 绑定类不可混淆）
-- `boofcv.**` / `org.ddogleg.**` / `georegression.**` keep + 对应 `-dontwarn`
 - ML Kit / ZXing keep 规则保留
 - 华为 HMS keep 规则保留
 
@@ -224,14 +199,9 @@ zxing-cpp 的 JNI 库（`libzxingcpp_android.so`）按此配置打入对应 ABI 
 - C++ 原生解码，全码制覆盖，支持 tryRotate/tryInvert/tryDownscale
 - YUV 直读，无 Java 层转换开销
 
-### 轻量备选：boofCV
-- 纯 Java，专注二维条码（QR/MicroQR/Aztec）
-- 内存复用设计，适合低端设备
-
 ## 参考文档
 
 - [华为 HMS Core Scan Kit](https://developer.huawei.com/consumer/cn/doc/HMSCore-Guides/android-build-scan-capabilities-0000001050042010)
 - [ML Kit Barcode Scanning](https://developers.google.com/ml-kit/vision/barcode-scanning/android)
 - [ZXing-CPP Android](https://github.com/zxing-cpp/zxing-cpp)
-- [BoofCV](https://boofcv.org/)
 - [CameraX](https://developer.android.com/training/camerax)

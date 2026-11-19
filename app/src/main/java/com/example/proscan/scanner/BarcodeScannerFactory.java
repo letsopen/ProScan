@@ -2,7 +2,6 @@ package com.example.proscan.scanner;
 
 import android.app.Activity;
 
-import com.example.proscan.scanner.impl.BoofCvBarcodeScanner;
 import com.example.proscan.scanner.impl.HuaweiBarcodeScanner;
 import com.example.proscan.scanner.impl.MlKitBarcodeScanner;
 import com.example.proscan.scanner.impl.ZxingCppBarcodeScanner;
@@ -11,7 +10,7 @@ import com.example.proscan.scanner.impl.ZxingCppBarcodeScanner;
  * 扫码器工厂类
  * 用于创建和管理不同的扫码实现
  * <p>
- * 引擎优先级：华为 HMS -> ML Kit -> ZXing-CPP -> BoofCV
+ * 引擎优先级：华为 HMS -> ML Kit -> ZXing-CPP
  */
 public class BarcodeScannerFactory {
 
@@ -21,8 +20,7 @@ public class BarcodeScannerFactory {
     public enum ScannerType {
         HUAWEI_SCAN_KIT("Huawei HMS"),     // 华为 HMS Core Scan Kit
         ML_KIT_STANDALONE("Google MLK"),   // ML Kit Barcode Scanning 独立版本（默认，不需要 Google Play Services）
-        ZXING_CPP("ZXING-CPP"),            // ZXing-CPP（原生实现）
-        BOOFCV("boofCV");                  // BoofCV（纯 Java，QR/MicroQR/Aztec）
+        ZXING_CPP("ZXING-CPP");            // ZXing-CPP（原生实现）
 
         private final String label;
 
@@ -63,15 +61,13 @@ public class BarcodeScannerFactory {
                 return new MlKitBarcodeScanner();
             case ZXING_CPP:
                 return new ZxingCppBarcodeScanner();
-            case BOOFCV:
-                return new BoofCvBarcodeScanner();
             default:
                 return new MlKitBarcodeScanner();
         }
     }
 
     /**
-     * 获取可用的扫码器（智能降级：华为 -> ML Kit -> ZXing-CPP -> BoofCV）
+     * 获取可用的扫码器（智能降级：华为 -> ML Kit -> ZXing-CPP）
      */
     public static BarcodeScanner getAvailableScanner(Activity activity) {
         // 1. 尝试使用华为 Scan Kit（仅在华为设备上）
@@ -86,14 +82,8 @@ public class BarcodeScannerFactory {
             return mlKitScanner;
         }
 
-        // 3. 降级到 ZXing-CPP
-        ZxingCppBarcodeScanner zxingCppScanner = new ZxingCppBarcodeScanner();
-        if (zxingCppScanner.isAvailable(activity)) {
-            return zxingCppScanner;
-        }
-
-        // 4. 最终降级到 BoofCV
-        return new BoofCvBarcodeScanner();
+        // 3. 最终降级到 ZXing-CPP
+        return new ZxingCppBarcodeScanner();
     }
 
     /**
@@ -115,11 +105,6 @@ public class BarcodeScannerFactory {
         ZxingCppBarcodeScanner zxingCppScanner = new ZxingCppBarcodeScanner();
         if (zxingCppScanner.isAvailable(activity)) {
             names.add(zxingCppScanner.getName());
-        }
-
-        BoofCvBarcodeScanner boofCvScanner = new BoofCvBarcodeScanner();
-        if (boofCvScanner.isAvailable(activity)) {
-            names.add(boofCvScanner.getName());
         }
 
         return names.toArray(new String[0]);
