@@ -241,10 +241,11 @@ public class UnifiedScanActivity extends AppCompatActivity {
             if (image.getFormat() == ImageFormat.YUV_420_888 && image.getPlanes().length >= 3) {
                 byte[] nv21 = yuv420ToNv21(image);
                 int rotation = image.getImageInfo().getRotationDegrees();
-                // MLFrame 相机流入口：writeByteBufferData(buf, format, w, h) + setQuadrant(rotation/90)
+                // MLFrame 相机流入口：writeByteBufferData(buf, width, height, format)
+                // （参数顺序已按 aar 反编译确认：第 4 参为 formatType，仅接受 NV21/NV16/YUY2）
                 MLFrame frame = new MLFrame.Creator()
-                        .writeByteBufferData(ByteBuffer.wrap(nv21), ImageFormat.NV21,
-                                image.getWidth(), image.getHeight())
+                        .writeByteBufferData(ByteBuffer.wrap(nv21),
+                                image.getWidth(), image.getHeight(), ImageFormat.NV21)
                         .setQuadrant(rotation / 90)
                         .create();
                 android.util.SparseArray<HmsScan> scans = hmsAnalyzer.analyseFrame(frame);
