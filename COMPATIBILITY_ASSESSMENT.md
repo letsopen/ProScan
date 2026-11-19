@@ -1,10 +1,13 @@
-# Android 10 (API 29) 兼容性评估
+# Android 兼容性评估
 
 ## 配置总结
 
 - **minSdkVersion**: 29 (Android 10)
-- **targetSdkVersion**: 33 (Android 13)
-- **compileSdkVersion**: 33
+- **targetSdkVersion**: 34 (Android 14)
+- **compileSdkVersion**: 34
+
+> v2.9 说明：compileSdk/targetSdk 从 33 升级到 34，原因是 ML Kit 17.3.0 与
+> zxing-cpp 2.3.0 的传递依赖将 CameraX 原子组升级至 1.4.1（要求 compileSdk ≥ 34）。
 
 ## 依赖兼容性评估
 
@@ -15,73 +18,62 @@
    - `com.google.android.material:material:1.9.0` - ✅ 支持 API 29
    - `androidx.constraintlayout:constraintlayout:2.1.4` - ✅ 支持 API 29
 
-2. **CameraX 1.2.3**
+2. **CameraX 1.4.1**（由 ML Kit 17.3.0 / zxing-cpp 2.3.0 传递引入）
    - ✅ 最低支持 API 21，完全兼容 API 29
-   - 所有组件（core, camera2, lifecycle, view）都兼容
+   - 所有组件（core, camera2, lifecycle, video, view）都兼容
 
-3. **ZXing**
-   - `com.journeyapps:zxing-android-embedded:4.3.0` - ✅ 支持 API 29
-   - `com.google.zxing:core:3.5.2` - ✅ 支持 API 29
+3. **ZXing-CPP**（`io.github.zxing-cpp:android:2.3.0`）
+   - ✅ 纯本地解码，含 JNI 原生库（arm64-v8a / armeabi-v7a）
+   - ✅ minSdk 24+，完全兼容 API 29
+   - ✅ 原生支持 YUV_420_888 与 Bitmap 直接解码
 
-4. **ML Kit**
-   - `com.google.mlkit:barcode-scanning:17.2.0` - ✅ 最低支持 API 19，完全兼容 API 29
-   - `com.google.android.gms:play-services-code-scanner:16.1.0` - ✅ 最低支持 API 23，完全兼容 API 29
+4. **BoofCV**（`org.boofcv:boofcv-recognition/android:0.44`）
+   - ✅ 纯 Java 实现，无 ABI 限制
+   - ✅ 要求 Java 8+，项目使用 Java 11 编译，兼容
+   - ⚠️ 已排除桌面端/Swing 传递依赖（boofcv-jmain / visualize / JTransforms-swing 等）
 
-5. **华为 HMS Core Scan Kit**
-   - `com.huawei.hms:scan:2.12.0.300` - ✅ 最低支持 API 19，完全兼容 API 29
+5. **ML Kit**（`com.google.mlkit:barcode-scanning:17.3.0`）
+   - ✅ 最低支持 API 21，完全兼容 API 29
+   - ✅ 模型打包在应用中，完全离线
 
-### ⚠️ 需要验证的依赖
+6. **华为 HMS Core Scan Kit**（`com.huawei.hms:scan:2.12.0.300`）
+   - ✅ 最低支持 API 19，完全兼容 API 29
 
-1. **OpenCV**
-   - `org.opencv:opencv:4.9.0` - ⚠️ 需要验证
-   - **注意**: 如果这个包不包含 Android 特定的类（如 `BaseLoaderCallback`, `OpenCVLoader`），可能需要：
-     - 使用 OpenCV Manager 动态加载
-     - 或者使用静态库集成
-     - 或者使用其他 OpenCV Android 包
+7. **ZXing core**（`com.google.zxing:core:3.5.2`，仅用于生成功能）
+   - ✅ 纯 Java，无平台限制
 
 ## 功能兼容性
 
 ### ✅ 完全支持的功能
 
-1. **ZXing 扫码** - ✅ 完全支持
-2. **ML Kit 独立版本扫码** - ✅ 完全支持
-3. **Google Code Scanner** - ✅ 完全支持（需要 Google Play Services）
-4. **华为 Scan Kit** - ✅ 完全支持（需要 HMS Core）
+1. **华为 HMS 扫码** - ✅ 支持（华为/荣耀设备，需 HMS Core）
+2. **ML Kit 独立版本扫码** - ✅ 支持（默认引擎，完全离线）
+3. **ZXing-CPP 扫码** - ✅ 支持（全码制，YUV 直读 + Bitmap 解码）
+4. **BoofCV 扫码** - ✅ 支持（QR / MicroQR / Aztec）
+5. **二维码/条形码生成** - ✅ 支持（zxing-core `MultiFormatWriter`）
 
-### ⚠️ 需要验证的功能
+### 引擎降级链
 
-1. **微信 OpenCV 二维码识别** - ⚠️ 取决于 OpenCV 依赖是否正确
+初始化未选择引擎或所选引擎不可用时，自动回落到默认引擎 **ML Kit 独立版本（Google MLK）**。
+运行时自动降级顺序：华为 HMS → Google MLK → ZXING-CPP → boofCV。
 
-## 已修复的问题
+## 已知限制
 
-1. ✅ **minSdkVersion 提升到 29**
-   - 解决了 adaptive-icon 需要 API 26 的问题
-   - 符合最低支持 Android 10 的要求
+1. **ZXing-CPP 仅支持识别**
+   - `io.github.zxing-cpp:android` 未暴露生成 API（C++ 侧 `WriteBarcode` 尚未封装到 Android）
+   - 因此生成功能保留 `com.google.zxing:core:3.5.2`
 
-2. ✅ **CameraX 版本降级到 1.2.3**
-   - 避免 SDK 版本要求过高
-   - 完全兼容 API 29
+2. **BoofCV 码制覆盖**
+   - 仅覆盖 QR / MicroQR / Aztec 三种二维条码，一维码与 PDF417/DataMatrix 不支持
+   - 作为最后的降级引擎使用
 
-## 建议
-
-1. **OpenCV 依赖验证**
-   - 如果 `org.opencv:opencv:4.9.0` 不包含 Android 类，考虑：
-     - 移除微信 OpenCV 二维码识别功能
-     - 或者使用其他 OpenCV Android 集成方式
-     - 或者使用 OpenCV Manager
-
-2. **测试建议**
-   - 在 Android 10 设备上测试所有扫码功能
-   - 特别验证 ML Kit 和 ZXing 的兼容性
-   - 如果使用华为设备，测试华为 Scan Kit
-
-3. **降级方案**
-   - 如果 OpenCV 无法正常工作，应用会自动降级到其他扫码方案
-   - 优先级：微信 → 华为 → ML Kit → ZXing
+3. **CameraX 原子组版本**
+   - ML Kit 17.3.0 与 zxing-cpp 2.3.0 均传递依赖 CameraX 1.4.1
+   - CameraX 为原子组（atomic group），无法单独锁定旧版本
+   - 因此 compileSdk 必须保持 ≥ 34
 
 ## 最低系统要求总结
 
 - **最低 Android 版本**: Android 10 (API 29) ✅
-- **推荐 Android 版本**: Android 10+ (API 29+)
-- **目标 Android 版本**: Android 13 (API 33)
-
+- **目标 Android 版本**: Android 14 (API 34)
+- **编译 SDK**: 34

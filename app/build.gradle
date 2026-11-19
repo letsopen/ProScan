@@ -3,12 +3,12 @@ plugins {
 }
 
 android {
-    compileSdkVersion 33
+    compileSdkVersion 34
     
     defaultConfig {
         applicationId "com.example.proscan" // 可选：修改应用包名
         minSdkVersion 29  // 最低支持 Android 10 (API 29)
-        targetSdkVersion 33
+        targetSdkVersion 34
         versionCode 27
         versionName "2.8"  // 版本更新
         ndk {
@@ -43,25 +43,39 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    
-    
-    // 二维码扫描 - ZXing（备用方案）
-    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
+
+    // ML Kit Barcode Scanning 独立版本（不需要 Google Play Services，模型打包在应用中）
+    implementation 'com.google.mlkit:barcode-scanning:17.3.0'
+
+    // ZXing-CPP Android 封装（官方维护，含 JNI .so，支持 YUV/Bitmap 直接解码）
+    implementation 'io.github.zxing-cpp:android:2.3.0'
+
+    // ZXing core（仅用于生成二维码/条形码；识别引擎已改用 ZXing-CPP）
     implementation 'com.google.zxing:core:3.5.2'
-    
-    // Google ML Kit Code Scanner（需要 Google Play Services）
-    implementation 'com.google.android.gms:play-services-code-scanner:16.1.0'
-    
-    // ML Kit Barcode Scanning 独立版本（不需要 Google Play Services）
-    implementation 'com.google.mlkit:barcode-scanning:17.2.0'
-    
-    // CameraX（用于 ML Kit 独立版本的相机预览）
+
+    // BoofCV（仅扫码核心模块；boofcv-android 为 aar，排除桌面端/Swing 传递依赖）
+    implementation('org.boofcv:boofcv-recognition:0.44')
+    implementation('org.boofcv:boofcv-android:0.44') {
+        exclude group: 'org.boofcv', module: 'boofcv-jmain'
+        exclude group: 'org.boofcv', module: 'boofcv-swing'
+        exclude group: 'org.boofcv', module: 'visualize'
+    }
+    configurations.all {
+        // BoofCV 桌面端可选传递依赖，Android 端无用
+        exclude group: 'org.python'
+        exclude group: 'com.github.wendykierp', module: 'JLargeArrays-swing'
+        exclude group: 'com.github.wendykierp', module: 'JTransforms-swing'
+    }
+
+    // CameraX（用于相机预览与图像分析）
+    // 注：ML Kit 17.3.0 / zxing-cpp 2.3.0 传递依赖会将 CameraX 原子组升级至 1.4.1（要求 compileSdk 34），
+    // 因此本项目 compileSdk/targetSdk 已升级到 34
     def camerax_version = "1.2.3"
     implementation "androidx.camera:camera-core:${camerax_version}"
     implementation "androidx.camera:camera-camera2:${camerax_version}"
     implementation "androidx.camera:camera-lifecycle:${camerax_version}"
     implementation "androidx.camera:camera-view:${camerax_version}"
-    
+
     // 华为 HMS Core Scan Kit
     implementation 'com.huawei.hms:scan:2.12.0.300'
 }

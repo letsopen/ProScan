@@ -21,20 +21,25 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.proscan.db.HistoryDbHelper;
 import com.example.proscan.scanner.BarcodeScanner;
 import com.example.proscan.scanner.BarcodeScannerFactory;
+
+// 生成功能仅用 zxing-core（识别引擎已切换为 zxing-cpp / ML Kit / BoofCV / 华为）
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
-import android.graphics.Bitmap;
-import android.graphics.Color;
+
 import android.app.Dialog;
 import android.widget.ImageView;
 import android.view.Window;
 import android.view.ViewGroup;
 import android.graphics.Matrix;
+
 import android.content.SharedPreferences;
 import android.widget.TextView;
 import androidx.appcompat.app.AlertDialog;
+
+import android.graphics.Bitmap;
+import android.graphics.Color;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -68,17 +73,20 @@ public class MainActivity extends AppCompatActivity {
         buttonHistory = findViewById(R.id.buttonHistory);
         textTitle = findViewById(R.id.textTitle);
 
+        // 初始化扫码引擎：优先用户上次选择；未选择或所选不可用时，
+        // 默认使用 ML Kit Barcode Scanning 独立版本（Google MLK）
         BarcodeScannerFactory.ScannerType savedType = loadSelectedScannerType();
         if (savedType != null) {
             BarcodeScanner candidate = BarcodeScannerFactory.createScanner(savedType);
             if (candidate.isAvailable(this)) {
                 barcodeScanner = candidate;
             } else {
-                barcodeScanner = BarcodeScannerFactory.getAvailableScanner(this);
+                barcodeScanner = BarcodeScannerFactory.createScanner(BarcodeScannerFactory.ScannerType.ML_KIT_STANDALONE);
             }
         } else {
-            barcodeScanner = BarcodeScannerFactory.getAvailableScanner(this);
+            barcodeScanner = BarcodeScannerFactory.createScanner(BarcodeScannerFactory.ScannerType.ML_KIT_STANDALONE);
         }
+        updateTitleLabel();
 
         textTitle.setOnClickListener(v -> showScannerChoiceDialog());
 
@@ -135,9 +143,7 @@ public class MainActivity extends AppCompatActivity {
     private void showScannerChoiceDialog() {
         java.util.List<BarcodeScannerFactory.ScannerType> typeList = new java.util.ArrayList<>();
         for (BarcodeScannerFactory.ScannerType t : BarcodeScannerFactory.ScannerType.values()) {
-            if (t != BarcodeScannerFactory.ScannerType.GOOGLE_ML_KIT) {
-                typeList.add(t);
-            }
+            typeList.add(t);
         }
         java.util.List<CharSequence> names = new java.util.ArrayList<>();
         java.util.List<Boolean> availables = new java.util.ArrayList<>();
@@ -184,9 +190,17 @@ public class MainActivity extends AppCompatActivity {
             }
             saveSelectedScannerType(type);
             barcodeScanner = s;
+            updateTitleLabel();
             Toast.makeText(this, "已切换到：" + s.getName(), Toast.LENGTH_SHORT).show();
         });
         builder.show();
+    }
+
+    /** 主界面标题（Logo 文字）显示当前引擎的短标签 */
+    private void updateTitleLabel() {
+        if (textTitle != null && barcodeScanner != null) {
+            textTitle.setText(barcodeScanner.getName());
+        }
     }
 
     private void saveSelectedScannerType(BarcodeScannerFactory.ScannerType type) {

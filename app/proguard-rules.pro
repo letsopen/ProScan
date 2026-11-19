@@ -37,8 +37,25 @@
 -keep class org.bouncycastle.** { *; }
 -dontwarn org.bouncycastle.**
 
-# --- Google ML Kit & ZXing ---
+# --- Google ML Kit ---
 -keep class com.google.mlkit.** { *; }
 -dontwarn com.google.mlkit.**
+
+# --- ZXing (仅用于生成功能) ---
 -keep class com.google.zxing.** { *; }
 -dontwarn com.google.zxing.**
+
+# --- ZXing-CPP（JNI 绑定，类与方法名不能被混淆）---
+-keep class zxingcpp.** { *; }
+-dontwarn zxingcpp.**
+
+# --- BoofCV（纯 Java，排除桌面端/Swing 缺失类告警）---
+-keep class boofcv.** { *; }
+-keep class org.ddogleg.** { *; }
+-keep class georegression.** { *; }
+-dontwarn boofcv.**
+-dontwarn org.ddogleg.**
+-dontwarn georegression.**
+-dontwarn pabeles.concurrency.**
+-dontwarn org.ejml.**
+-dontwarn boofcv.android.**

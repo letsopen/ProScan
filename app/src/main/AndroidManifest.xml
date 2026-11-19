@@ -15,10 +15,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
         
-        <!-- Google ML Kit Code Scanner 自动下载模块配置 -->
-        <meta-data
-            android:name="com.google.mlkit.vision.DEPENDENCIES"
-            android:value="barcode_ui" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -28,12 +24,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".CustomCaptureActivity"
-            android:screenOrientation="fullSensor"
-            android:stateNotNeeded="true"
-            android:theme="@style/zxing_CaptureTheme"
-            android:windowSoftInputMode="stateAlwaysHidden" />
         <activity
             android:name=".scanner.impl.UnifiedScanActivity"
             android:screenOrientation="fullSensor"
