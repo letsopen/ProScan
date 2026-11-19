@@ -44,6 +44,13 @@ import java.util.concurrent.Executors;
 
 public class UnifiedScanActivity extends AppCompatActivity {
     private static final String TAG = "UnifiedScanActivity";
+    /** 帧间一致性确认帧数：同一结果连续命中 2 帧才上报（抑制曲面边缘 1D 误读） */
+    private static final int CONFIRM_HITS = 2;
+    /** 候选结果有效期（ms），超时重置 */
+    private static final long CANDIDATE_TIMEOUT_MS = 800;
+    private String lastCandidate;
+    private int candidateHits;
+    private long lastCandidateAt;
     private PreviewView previewView;
     private ViewfinderView viewfinderView;
     private ProcessCameraProvider cameraProvider;
@@ -192,13 +199,47 @@ public class UnifiedScanActivity extends AppCompatActivity {
         try {
             String result = frameDecoder.decode(image);
             if (result != null && active) {
-                emitSuccess(result);
+                onDecodeCandidate(result);
                 return;
             }
         } catch (Throwable t) {
             // 吞帧继续
         }
         processing = false;
+    }
+
+    /**
+     * 帧间一致性确认：同一解码文本连续命中 CONFIRM_HITS 帧才真正上报。
+     * <p>
+     * 目的：抑制曲面/反光边缘的 1D 条码误读（如 6↔8），此类误读结果在相邻帧
+     * 几乎不可能原样复现，而真码每帧稳定输出。EAN-13/UPC-A 虽有校验位，
+     * 但两位同时出错且校验和恰好抵消时仍可能漏过，帧间校验可兜住。
+     */
+    private void onDecodeCandidate(String value) {
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (value.equals(lastCandidate)) {
+            candidateHits++;
+        } else {
+            lastCandidate = value;
+            candidateHits = 1;
+            lastCandidateAt = now;
+        }
+        // 超过 800ms 未再次命中则重置（对焦切换/画面变化后旧候选不再有效）
+        if (now - lastCandidateAt > 800) {
+            candidateHits = 1;
+            lastCandidateAt = now;
+        }
+        if (candidateHits >= CONFIRM_HITS) {
+            resetCandidate();
+            emitSuccess(value);
+        } else {
+            processing = false;
+        }
+    }
+
+    private void resetCandidate() {
+        lastCandidate = null;
+        candidateHits = 0;
     }
 
     private void processMlkit(ImageProxy image) {
@@ -210,7 +251,7 @@ public class UnifiedScanActivity extends AppCompatActivity {
                 .addOnSuccessListener(barcodes -> {
                     if (!barcodes.isEmpty() && active) {
                         String value = barcodes.get(0).getRawValue();
-                        if (value != null) emitSuccess(value);
+                        if (value != null) onDecodeCandidate(value);
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -253,7 +294,7 @@ public class UnifiedScanActivity extends AppCompatActivity {
                     String value = scans.valueAt(0).getOriginalValue();
                     if (value != null) {
                         handled = true;
-                        emitSuccess(value);
+                        onDecodeCandidate(value);
                     }
                 }
             }
@@ -276,7 +317,7 @@ public class UnifiedScanActivity extends AppCompatActivity {
                             .decodeWithBitmap(getApplicationContext(), bitmap, options);
                     if (scans != null && scans.length > 0 && active) {
                         String value = scans[0].getOriginalValue();
-                        if (value != null) emitSuccess(value);
+                        if (value != null) onDecodeCandidate(value);
                     }
                 }
             } catch (Throwable t) {
