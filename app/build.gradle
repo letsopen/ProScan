@@ -69,6 +69,7 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:${camerax_version}"
     implementation "androidx.camera:camera-view:${camerax_version}"
 
-    // 华为 HMS Core Scan Kit
-    implementation 'com.huawei.hms:scan:2.12.0.300'
+    // 华为 HMS Core Scan Kit 增强版（scanplus，针对曲面/反光/污损/小码优化的 AI 增强算法）
+    // 基础版 scan 算法较弱，条码识别场景务必使用 scanplus
+    implementation 'com.huawei.hms:scanplus:2.12.0.300'
 }

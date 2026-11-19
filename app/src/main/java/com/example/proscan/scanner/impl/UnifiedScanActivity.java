@@ -11,6 +11,9 @@ import android.os.Vibrator;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.Camera;
+import androidx.camera.core.resolutionselector.ResolutionSelector;
+import androidx.camera.core.resolutionselector.ResolutionStrategy;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
@@ -26,13 +29,15 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.barcode.BarcodeScanning;
 import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.common.InputImage;
-import com.huawei.hms.hmsscankit.ScanUtil;
 import com.huawei.hms.ml.scan.HmsScan;
+import com.huawei.hms.ml.scan.HmsScanAnalyzer;
 import com.huawei.hms.ml.scan.HmsScanAnalyzerOptions;
+import com.huawei.hms.mlsdk.common.MLFrame;
 import com.example.proscan.scanner.decoder.FrameDecoder;
 import com.example.proscan.scanner.decoder.ZxingCppFrameDecoder;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -48,6 +53,7 @@ public class UnifiedScanActivity extends AppCompatActivity {
     private volatile boolean processing = false;
     private com.google.mlkit.vision.barcode.BarcodeScanner mlkitScanner;
     private FrameDecoder frameDecoder;
+    private HmsScanAnalyzer hmsAnalyzer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +88,14 @@ public class UnifiedScanActivity extends AppCompatActivity {
         // 按当前引擎创建帧解码器
         if ("ZXING_CPP".equals(decoder)) {
             frameDecoder = new ZxingCppFrameDecoder();
+        } else if ("HUAWEI_SCAN_KIT".equals(decoder)) {
+            // 增强 AI 分析器：实时流模式（photoMode=false），针对曲面/反光/污损优化
+            hmsAnalyzer = new HmsScanAnalyzer(
+                    new HmsScanAnalyzerOptions.Creator()
+                            .setHmsScanTypes(HmsScan.ALL_SCAN_TYPE)
+                            .setPhotoMode(false)
+                            .setParseResult(true)
+                            .create());
         }
         startCamera();
     }
@@ -101,21 +115,60 @@ public class UnifiedScanActivity extends AppCompatActivity {
 
     private void bind(ProcessCameraProvider provider) {
         this.cameraProvider = provider;
-        Preview preview = new Preview.Builder().build();
+        Preview preview = new Preview.Builder()
+                // 分辨率锁定 1280x720：4K 会放大金属反光噪点且降低帧率，
+                // 低于 720p 则 1D 条码条纹分辨率不足
+                .setResolutionSelector(new ResolutionSelector.Builder()
+                        .setResolutionStrategy(new ResolutionStrategy(
+                                new android.util.Size(1280, 720),
+                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER))
+                        .build())
+                .build();
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
         ImageAnalysis analysis = new ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setResolutionSelector(new ResolutionSelector.Builder()
+                        .setResolutionStrategy(new ResolutionStrategy(
+                                new android.util.Size(1280, 720),
+                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER))
+                        .build())
                 .build();
         analysis.setAnalyzer(cameraExecutor, this::analyze);
         try {
             provider.unbindAll();
-            provider.bindToLifecycle((LifecycleOwner) this,
+            Camera camera = provider.bindToLifecycle((LifecycleOwner) this,
                     androidx.camera.core.CameraSelector.DEFAULT_BACK_CAMERA,
                     preview, analysis);
+            setupTapToFocus(camera.getCameraControl());
         } catch (Exception e) {
             if (callback != null) callback.onError("相机绑定失败: " + e.getMessage());
             finish();
         }
+    }
+
+    /**
+     * 点击对焦/测光：金属饮料罐极易局部过曝（反光处死白），
+     * 用户点击条码位置触发局部测光压低曝光，3 秒后自动恢复连续对焦
+     */
+    private void setupTapToFocus(androidx.camera.core.CameraControl cameraControl) {
+        if (viewfinderView == null || previewView == null) return;
+        viewfinderView.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+                androidx.camera.core.MeteringPointFactory factory = previewView.getMeteringPointFactory();
+                androidx.camera.core.MeteringPoint point =
+                        factory.createPoint(event.getX(), event.getY());
+                androidx.camera.core.FocusMeteringAction action =
+                        new androidx.camera.core.FocusMeteringAction.Builder(
+                                point, androidx.camera.core.FocusMeteringAction.FLAG_AF
+                                        | androidx.camera.core.FocusMeteringAction.FLAG_AE)
+                                .setAutoCancelDuration(3, java.util.concurrent.TimeUnit.SECONDS)
+                                .build();
+                cameraControl.startFocusAndMetering(action);
+                v.performClick();
+                return true;
+            }
+            return false;
+        });
     }
 
     private void analyze(@NonNull ImageProxy image) {
@@ -125,12 +178,7 @@ public class UnifiedScanActivity extends AppCompatActivity {
         if ("ML_KIT_STANDALONE".equals(decoder)) {
             processMlkit(image);
         } else if ("HUAWEI_SCAN_KIT".equals(decoder)) {
-            Bitmap bitmap = toBitmap(image);
-            if (bitmap != null) {
-                processHuawei(bitmap);
-            }
-            processing = false;
-            image.close();
+            processHuaweiFrame(image);
         } else if ("ZXING_CPP".equals(decoder)) {
             processWithFrameDecoder(image);
         } else {
@@ -173,17 +221,6 @@ public class UnifiedScanActivity extends AppCompatActivity {
                 });
     }
 
-    private void processHuawei(Bitmap bitmap) {
-        HmsScanAnalyzerOptions options = new HmsScanAnalyzerOptions.Creator()
-                .setHmsScanTypes(HmsScan.ALL_SCAN_TYPE)
-                .create();
-        HmsScan[] scans = ScanUtil.decodeWithBitmap(this, bitmap, options);
-        if (scans != null && scans.length > 0 && active) {
-            String value = scans[0].getOriginalValue();
-            if (value != null) emitSuccess(value);
-        }
-    }
-
     private void emitSuccess(String value) {
         active = false;
         Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -192,17 +229,34 @@ public class UnifiedScanActivity extends AppCompatActivity {
         runOnUiThread(this::finish);
     }
 
-    private Bitmap toBitmap(ImageProxy image) {
+    /**
+     * 华为 HMS：使用 HmsScanAnalyzer 直接分析 YUV 帧的 NV21 字节流（MLFrame.fromByteBuffer）
+     * 显式 setPhotoMode(false) 避免走静态图慢速管线；
+     * quadrant 传入相机旋转角度，保证竖排/横排条码都能命中
+     */
+    private void processHuaweiFrame(ImageProxy image) {
         try {
-            if (image.getFormat() != ImageFormat.YUV_420_888 || image.getPlanes().length < 3) return null;
+            if (image.getFormat() != ImageFormat.YUV_420_888 || image.getPlanes().length < 3) {
+                return;
+            }
             byte[] nv21 = yuv420ToNv21(image);
-            YuvImage yuvImage = new YuvImage(nv21, ImageFormat.NV21, image.getWidth(), image.getHeight(), null);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            yuvImage.compressToJpeg(new Rect(0, 0, image.getWidth(), image.getHeight()), 90, out);
-            byte[] jpegBytes = out.toByteArray();
-            return android.graphics.BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.length);
-        } catch (Exception e) {
-            return null;
+            int rotation = image.getImageInfo().getRotationDegrees();
+            // MLFrame 相机流入口：writeByteBufferData(buf, format, w, h) + setQuadrant(rotation/90)
+            MLFrame frame = new MLFrame.Creator()
+                    .writeByteBufferData(ByteBuffer.wrap(nv21), ImageFormat.NV21,
+                            image.getWidth(), image.getHeight())
+                    .setQuadrant(rotation / 90)
+                    .create();
+            android.util.SparseArray<HmsScan> scans = hmsAnalyzer.analyseFrame(frame);
+            if (scans != null && scans.size() > 0 && active) {
+                String value = scans.valueAt(0).getOriginalValue();
+                if (value != null) emitSuccess(value);
+            }
+        } catch (Throwable t) {
+            // 单帧失败继续下一帧
+        } finally {
+            processing = false;
+            image.close();
         }
     }
 
@@ -256,6 +310,10 @@ public class UnifiedScanActivity extends AppCompatActivity {
         if (frameDecoder != null) {
             frameDecoder.close();
             frameDecoder = null;
+        }
+        if (hmsAnalyzer != null) {
+            try { hmsAnalyzer.destory(); } catch (Throwable ignored) {}
+            hmsAnalyzer = null;
         }
         if (isFinishing()) ScanCallbackHolder.clear();
         super.onDestroy();

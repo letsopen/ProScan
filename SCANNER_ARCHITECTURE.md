@@ -53,17 +53,22 @@
 - `BarcodeReader.read(ImageProxy)` 原生支持 YUV_420_888，JNI 直接读取 plane，**无 Java 层色彩空间转换开销**
 - `BarcodeReader.read(Bitmap, crop, rotation)` 支持位图直接解码
 - 开启 `tryHarder / tryRotate / tryInvert / tryDownscale`，全码制覆盖（QR/MicroQR/RMQR/Aztec/DataMatrix/PDF417/一维码全套）
+- **条码识别调优**（针对曲面/反光一维码）：
+  - `Binarizer.LOCAL_AVERAGE` 局部自适应二值化（瓶身受光不均必需）
+  - `downscaleFactor=2 / downscaleThreshold=500` 降采样低通滤波，把反光断裂条纹"糊"连贯
+  - `minLineCount=1`：曲面反光下整码可能只剩一条清晰扫描线；EAN-13/UPC-A/CODE-128 自带校验位，不引入误识
 - 注意：该库仅提供**识别**，不含生成 API
 
 #### `HuaweiBarcodeScanner`（Huawei HMS）
-- 基于华为 HMS Core Scan Kit
+- 使用**增强版 scanplus**（`com.huawei.hms:scanplus`，非基础版 scan）——AI 增强算法，专门针对曲面、反光、污损、小码优化
+- 实时流走 `HmsScanAnalyzer` + `MLFrame.fromByteBuffer`（YUV NV21 直读，`setPhotoMode(false)` 避免静态图慢速管线），quadrant 透传相机旋转角度
 - 在华为/荣耀设备上优先可用（`isAvailable` 检查厂商 + HMS Core）
-- 通过 `ScanUtil.decodeWithBitmap` 解码
 
 ### 解码中枢
 
 `UnifiedScanActivity` 是所有引擎共用的扫码页面：
-- CameraX `ImageAnalysis` 产出 `ImageProxy` 帧
+- CameraX `ImageAnalysis` 产出 `ImageProxy` 帧（分辨率锁定 **1280x720**：4K 放大反光噪点且降帧率，低于 720p 条纹分辨率不足）
+- 支持点击对焦/测光（tap-to-focus + AE）：金属罐反光处可点按压低局部曝光，3 秒后自动恢复连续对焦
 - 按 `ScanCallbackHolder.decoder` 标识分派：
   - `ML_KIT_STANDALONE` → ML Kit `InputImage`
   - `HUAWEI_SCAN_KIT` → YUV→JPEG→Bitmap → `ScanUtil.decodeWithBitmap`

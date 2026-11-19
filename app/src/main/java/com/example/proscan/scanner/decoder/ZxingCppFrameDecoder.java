@@ -47,10 +47,22 @@ public class ZxingCppFrameDecoder implements FrameDecoder {
                 BarcodeReader.Format.UPC_A,
                 BarcodeReader.Format.UPC_E);
         options.setFormats(formats);
-        options.setTryHarder(true);
-        options.setTryRotate(true);
-        options.setTryInvert(true);
-        options.setTryDownscale(true);
+        options.setTryHarder(true);      // 增加扫描线密度
+        options.setTryRotate(true);      // 竖排条码（饮料罐常见）
+        options.setTryInvert(true);      // 金属罐反色/强反光
+        options.setTryDownscale(true);   // 降采样低通滤波：把反光断裂的条纹"糊"连贯
+
+        // 二值化：瓶身受光不均，必须局部自适应阈值，不能用全局直方图
+        options.setBinarizer(BarcodeReader.Binarizer.LOCAL_AVERAGE);
+
+        // 降采样参数：高分辨率下金属反光与曲面锯齿被放大，降采样相当于低通滤波
+        options.setDownscaleThreshold(500);
+        options.setDownscaleFactor(2);
+
+        // 最小命中行数降为 1：曲面反光常导致整码只有极窄一条清晰扫描线；
+        // EAN-13/UPC-A/CODE-128 自带校验位，minLineCount=1 几乎不引入误识
+        options.setMinLineCount(1);
+
         reader = new BarcodeReader(options);
     }
 
