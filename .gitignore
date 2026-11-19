@@ -92,4 +92,4 @@ lint/tmp/
 # Backup folder
 *.bak
 *.tmp
-*~ 
+*~ app/build/
