@@ -182,7 +182,7 @@ zxing-cpp 的 JNI 库（`libzxingcpp_android.so`）按此配置打入对应 ABI 
 ### compileSdk / targetSdk
 
 - **compileSdkVersion / targetSdkVersion: 34**（CameraX 1.4.1 由 ML Kit 17.3.0 与 zxing-cpp 2.3.0 传递引入，要求 compileSdk ≥ 34）
-- **minSdkVersion: 29**（Android 10）
+- **minSdkVersion: 30**（Android 11）
 
 ## 引擎能力对比
 

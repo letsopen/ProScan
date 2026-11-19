@@ -2,7 +2,7 @@
 
 ## 配置总结
 
-- **minSdkVersion**: 29 (Android 10)
+- **minSdkVersion**: 30 (Android 11)
 - **targetSdkVersion**: 34 (Android 14)
 - **compileSdkVersion**: 34
 
@@ -14,17 +14,17 @@
 ### ✅ 已确认兼容的依赖
 
 1. **AndroidX 组件**
-   - `androidx.appcompat:appcompat:1.6.1` - ✅ 支持 API 29
-   - `com.google.android.material:material:1.9.0` - ✅ 支持 API 29
-   - `androidx.constraintlayout:constraintlayout:2.1.4` - ✅ 支持 API 29
+   - `androidx.appcompat:appcompat:1.6.1` - ✅ 支持 API 30
+   - `com.google.android.material:material:1.9.0` - ✅ 支持 API 30
+   - `androidx.constraintlayout:constraintlayout:2.1.4` - ✅ 支持 API 30
 
 2. **CameraX 1.4.1**（由 ML Kit 17.3.0 / zxing-cpp 2.3.0 传递引入）
-   - ✅ 最低支持 API 21，完全兼容 API 29
+   - ✅ 最低支持 API 21，完全兼容 API 30
    - 所有组件（core, camera2, lifecycle, video, view）都兼容
 
 3. **ZXing-CPP**（`io.github.zxing-cpp:android:2.3.0`）
    - ✅ 纯本地解码，含 JNI 原生库（arm64-v8a / armeabi-v7a）
-   - ✅ minSdk 24+，完全兼容 API 29
+   - ✅ minSdk 24+，完全兼容 API 30
    - ✅ 原生支持 YUV_420_888 与 Bitmap 直接解码
 
 4. **BoofCV**（`org.boofcv:boofcv-recognition/android:0.44`）
@@ -33,11 +33,11 @@
    - ⚠️ 已排除桌面端/Swing 传递依赖（boofcv-jmain / visualize / JTransforms-swing 等）
 
 5. **ML Kit**（`com.google.mlkit:barcode-scanning:17.3.0`）
-   - ✅ 最低支持 API 21，完全兼容 API 29
+   - ✅ 最低支持 API 21，完全兼容 API 30
    - ✅ 模型打包在应用中，完全离线
 
 6. **华为 HMS Core Scan Kit**（`com.huawei.hms:scan:2.12.0.300`）
-   - ✅ 最低支持 API 19，完全兼容 API 29
+   - ✅ 最低支持 API 19，完全兼容 API 30
 
 7. **ZXing core**（`com.google.zxing:core:3.5.2`，仅用于生成功能）
    - ✅ 纯 Java，无平台限制
@@ -74,6 +74,6 @@
 
 ## 最低系统要求总结
 
-- **最低 Android 版本**: Android 10 (API 29) ✅
+- **最低 Android 版本**: Android 11 (API 30) ✅
 - **目标 Android 版本**: Android 14 (API 34)
 - **编译 SDK**: 34

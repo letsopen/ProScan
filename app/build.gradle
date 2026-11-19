@@ -7,7 +7,7 @@ android {
     
     defaultConfig {
         applicationId "com.example.proscan" // 可选：修改应用包名
-        minSdkVersion 29  // 最低支持 Android 10 (API 29)
+        minSdkVersion 30  // 最低支持 Android 11
         targetSdkVersion 34
         versionCode 27
         versionName "2.8"  // 版本更新
