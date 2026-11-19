@@ -4,9 +4,9 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -24,6 +24,7 @@ import java.util.List;
 public class HistoryActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private HistoryAdapter adapter;
+    private TextView emptyView;
     private List<HistoryItem> historyList;
     private HistoryDbHelper dbHelper;
 
@@ -32,12 +33,13 @@ public class HistoryActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_history);
 
-        dbHelper = new HistoryDbHelper(this);
+        dbHelper = HistoryDbHelper.getInstance(this);
         historyList = new ArrayList<>();
-        
+
         recyclerView = findViewById(R.id.recyclerView);
+        emptyView = findViewById(R.id.emptyView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        
+
         adapter = new HistoryAdapter(historyList, new HistoryAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(HistoryItem item) {
@@ -67,6 +69,7 @@ public class HistoryActivity extends AppCompatActivity {
                         dbHelper.deleteHistoryItem(item.getId());
                         historyList.remove(item);
                         adapter.notifyDataSetChanged();
+                        updateEmptyState();
                         Toast.makeText(HistoryActivity.this, "已删除", Toast.LENGTH_SHORT).show();
                     })
                     .setNegativeButton("取消", null)
@@ -81,7 +84,7 @@ public class HistoryActivity extends AppCompatActivity {
                 Toast.makeText(this, "没有历史记录", Toast.LENGTH_SHORT).show();
                 return;
             }
-            
+
             new AlertDialog.Builder(this)
                 .setTitle("删除全部")
                 .setMessage("确定要删除所有历史记录吗？")
@@ -89,6 +92,7 @@ public class HistoryActivity extends AppCompatActivity {
                     dbHelper.clearAllHistory();
                     historyList.clear();
                     adapter.notifyDataSetChanged();
+                    updateEmptyState();
                     Toast.makeText(HistoryActivity.this, "已清空历史记录", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("取消", null)
@@ -99,8 +103,20 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void loadHistory() {
-        historyList.clear();
-        historyList.addAll(dbHelper.getAllHistoryItems());
-        adapter.notifyDataSetChanged();
+        // 数据库读取已移至后台线程，回调后再刷新列表
+        dbHelper.getAllHistoryItems(items -> {
+            historyList.clear();
+            historyList.addAll(items);
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+                updateEmptyState();
+            }
+        });
     }
-} 
+
+    private void updateEmptyState() {
+        boolean empty = historyList.isEmpty();
+        emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
+        recyclerView.setVisibility(empty ? View.GONE : View.VISIBLE);
+    }
+}

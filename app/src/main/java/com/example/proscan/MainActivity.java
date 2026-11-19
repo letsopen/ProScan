@@ -21,8 +21,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.proscan.db.HistoryDbHelper;
 import com.example.proscan.scanner.BarcodeScanner;
 import com.example.proscan.scanner.BarcodeScannerFactory;
-import com.example.proscan.scanner.impl.HuaweiBarcodeScanner;
-import com.example.proscan.scanner.impl.ZxingBarcodeScanner;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
@@ -38,6 +36,9 @@ import android.content.SharedPreferences;
 import android.widget.TextView;
 import androidx.appcompat.app.AlertDialog;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class MainActivity extends AppCompatActivity {
     private EditText editTextUrl;
     private Button buttonScan;
@@ -47,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView textTitle;
     private HistoryDbHelper dbHelper;
     private BarcodeScanner barcodeScanner;
+    private Dialog generatingDialog;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private static final String PREFS = "proscan_prefs";
     private static final String KEY_SCANNER_TYPE = "scanner_type";
 
@@ -57,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        dbHelper = new HistoryDbHelper(this);
+        dbHelper = HistoryDbHelper.getInstance(this);
         editTextUrl = findViewById(R.id.editTextUrl);
         buttonScan = findViewById(R.id.buttonScan);
         buttonPaste = findViewById(R.id.buttonPaste);
@@ -92,8 +95,11 @@ public class MainActivity extends AppCompatActivity {
             if (clipboard.hasPrimaryClip()) {
                 ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
                 String text = item.getText().toString();
+                if (text == null || text.isEmpty()) {
+                    Toast.makeText(this, "剪贴板为空", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 editTextUrl.setText(text);
-                dbHelper.addHistoryItem(text, "paste");
                 Toast.makeText(this, "已粘贴", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(this, "剪贴板为空", Toast.LENGTH_SHORT).show();
@@ -282,18 +288,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        // 处理华为扫码结果（华为使用Activity Result）
-        if (HuaweiBarcodeScanner.handleActivityResult(requestCode, resultCode, data)) {
-            // 华为已处理，返回
-            return;
-        }
-        
-        // 处理ZXing扫码结果（ZXing使用Activity Result）
-        if (ZxingBarcodeScanner.handleActivityResult(requestCode, resultCode, data)) {
-            // ZXing已处理，返回
-            return;
-        }
-        
         // 处理从历史记录返回的内容
         if (requestCode == 1 && resultCode == RESULT_OK && data != null) {
             String content = data.getStringExtra("content");
@@ -306,140 +300,155 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void generateBarcode() {
-        String content = editTextUrl.getText().toString();
+        final String content = editTextUrl.getText().toString();
         if (content.isEmpty()) {
             Toast.makeText(this, "请输入内容", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        try {
-            // 检查内容是否只包含合法字符
-            if (!content.matches("^[\\x00-\\x7F]+$")) {
-                Toast.makeText(this, "条形码内容只能包含ASCII字符", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            MultiFormatWriter writer = new MultiFormatWriter();
-            // 使用屏幕高度作为宽度，屏幕宽度作为高度，以便旋转后充分利用屏幕空间
-            int screenWidth = getResources().getDisplayMetrics().widthPixels;
-            int screenHeight = getResources().getDisplayMetrics().heightPixels;
-            BitMatrix bitMatrix = writer.encode(content, BarcodeFormat.CODE_128, screenHeight, screenWidth);
-            
-            // 创建位图并旋转90度
-            Bitmap bitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888);
-            for (int x = 0; x < screenHeight; x++) {
-                for (int y = 0; y < screenWidth; y++) {
-                    bitmap.setPixel(y, x, bitMatrix.get(x, y) ? Color.BLACK : Color.WHITE);
-                }
-            }
-            
-            // 旋转90度
-            Matrix matrix = new Matrix();
-            matrix.postRotate(90);
-            Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-            bitmap.recycle();
-            
-            showBarcodeDialog(rotatedBitmap);
-        } catch (WriterException e) {
-            Toast.makeText(this, "生成条形码失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
-            Toast.makeText(this, "生成条形码时发生错误", Toast.LENGTH_SHORT).show();
+        // 检查内容是否只包含合法字符（条形码仅支持ASCII）
+        if (!content.matches("^[\\x00-\\x7F]+$")) {
+            Toast.makeText(this, "条形码内容只能包含ASCII字符", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        // 生成位图放到后台线程，避免主线程卡顿/ANR
+        showGeneratingDialog();
+        executor.execute(() -> {
+            try {
+                MultiFormatWriter writer = new MultiFormatWriter();
+                // 使用屏幕高度作为宽度，屏幕宽度作为高度，以便旋转后充分利用屏幕空间
+                int screenWidth = getResources().getDisplayMetrics().widthPixels;
+                int screenHeight = getResources().getDisplayMetrics().heightPixels;
+                BitMatrix bitMatrix = writer.encode(content, BarcodeFormat.CODE_128, screenHeight, screenWidth);
+
+                // 创建位图并旋转90度
+                Bitmap bitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888);
+                for (int x = 0; x < screenHeight; x++) {
+                    for (int y = 0; y < screenWidth; y++) {
+                        bitmap.setPixel(y, x, bitMatrix.get(x, y) ? Color.BLACK : Color.WHITE);
+                    }
+                }
+
+                // 旋转90度
+                Matrix matrix = new Matrix();
+                matrix.postRotate(90);
+                Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                bitmap.recycle();
+
+                runOnUiThread(() -> {
+                    dismissGeneratingDialog();
+                    showImageDialog(rotatedBitmap);
+                });
+            } catch (WriterException e) {
+                runOnUiThread(() -> {
+                    dismissGeneratingDialog();
+                    Toast.makeText(this, "生成条形码失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    dismissGeneratingDialog();
+                    Toast.makeText(this, "生成条形码时发生错误", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
     }
 
     private void generateQRCode() {
-        String content = editTextUrl.getText().toString();
+        final String content = editTextUrl.getText().toString();
         if (content.isEmpty()) {
             Toast.makeText(this, "请输入内容", Toast.LENGTH_SHORT).show();
             return;
         }
+        // 检查内容长度
+        if (content.length() > 3000) {
+            Toast.makeText(this, "二维码内容过长，请控制在3000字符以内", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        try {
-            // 检查内容长度
-            if (content.length() > 3000) {
-                Toast.makeText(this, "二维码内容过长，请控制在3000字符以内", Toast.LENGTH_SHORT).show();
-                return;
-            }
+        // 生成位图放到后台线程，避免主线程卡顿/ANR
+        showGeneratingDialog();
+        executor.execute(() -> {
+            try {
+                MultiFormatWriter writer = new MultiFormatWriter();
+                // 使用屏幕宽度作为二维码尺寸
+                int size = getResources().getDisplayMetrics().widthPixels;
+                BitMatrix bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, size, size);
+                Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
 
-            MultiFormatWriter writer = new MultiFormatWriter();
-            // 使用屏幕宽度作为二维码尺寸
-            int size = getResources().getDisplayMetrics().widthPixels;
-            BitMatrix bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, size, size);
-            Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-            
-            for (int x = 0; x < size; x++) {
-                for (int y = 0; y < size; y++) {
-                    bitmap.setPixel(x, y, bitMatrix.get(x, y) ? Color.BLACK : Color.WHITE);
+                for (int x = 0; x < size; x++) {
+                    for (int y = 0; y < size; y++) {
+                        bitmap.setPixel(x, y, bitMatrix.get(x, y) ? Color.BLACK : Color.WHITE);
+                    }
                 }
+
+                runOnUiThread(() -> {
+                    dismissGeneratingDialog();
+                    showImageDialog(bitmap);
+                });
+            } catch (WriterException e) {
+                runOnUiThread(() -> {
+                    dismissGeneratingDialog();
+                    Toast.makeText(this, "生成二维码失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    dismissGeneratingDialog();
+                    Toast.makeText(this, "生成二维码时发生错误", Toast.LENGTH_SHORT).show();
+                });
             }
-            
-            showQRCodeDialog(bitmap);
-        } catch (WriterException e) {
-            Toast.makeText(this, "生成二维码失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
-            Toast.makeText(this, "生成二维码时发生错误", Toast.LENGTH_SHORT).show();
-        }
+        });
     }
 
-    private void showBarcodeDialog(Bitmap bitmap) {
+    /** 统一的码图展示对话框（二维码/条形码共用） */
+    private void showImageDialog(Bitmap bitmap) {
         try {
             Dialog dialog = new Dialog(this, android.R.style.Theme_Material_Light_NoActionBar);
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-            
+
             // 创建白色背景的ImageView
             ImageView imageView = new ImageView(this);
             imageView.setBackgroundColor(Color.WHITE);
             imageView.setImageBitmap(bitmap);
-            
+
             // 设置边距为屏幕宽度的2.5%
             int margin = (int) (getResources().getDisplayMetrics().widthPixels * 0.025);
             imageView.setPadding(margin, margin, margin, margin);
-            
+
             dialog.setContentView(imageView);
             dialog.getWindow().setLayout(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             );
-            
+
             imageView.setOnClickListener(v -> {
                 dialog.dismiss();
                 bitmap.recycle();
             });
+            dialog.setOnDismissListener(d -> {
+                if (!bitmap.isRecycled()) bitmap.recycle();
+            });
             dialog.show();
         } catch (Exception e) {
-            Toast.makeText(this, "显示条形码时发生错误", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "显示码图时发生错误", Toast.LENGTH_SHORT).show();
             bitmap.recycle();
         }
     }
 
-    private void showQRCodeDialog(Bitmap bitmap) {
-        try {
-            Dialog dialog = new Dialog(this, android.R.style.Theme_Material_Light_NoActionBar);
-            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-            
-            // 创建白色背景的ImageView
-            ImageView imageView = new ImageView(this);
-            imageView.setBackgroundColor(Color.WHITE);
-            imageView.setImageBitmap(bitmap);
-            
-            // 设置边距为屏幕宽度的2.5%
-            int margin = (int) (getResources().getDisplayMetrics().widthPixels * 0.025);
-            imageView.setPadding(margin, margin, margin, margin);
-            
-            dialog.setContentView(imageView);
-            dialog.getWindow().setLayout(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            );
-            
-            imageView.setOnClickListener(v -> {
-                dialog.dismiss();
-                bitmap.recycle();
-            });
-            dialog.show();
-        } catch (Exception e) {
-            Toast.makeText(this, "显示二维码时发生错误", Toast.LENGTH_SHORT).show();
-            bitmap.recycle();
-        }
+    private void showGeneratingDialog() {
+        generatingDialog = new Dialog(this);
+        generatingDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        TextView tv = new TextView(this);
+        tv.setText("生成中…");
+        tv.setPadding(48, 32, 48, 32);
+        generatingDialog.setContentView(tv);
+        generatingDialog.setCancelable(false);
+        generatingDialog.show();
     }
-} 
+
+    private void dismissGeneratingDialog() {
+        if (generatingDialog != null && generatingDialog.isShowing()) {
+            generatingDialog.dismiss();
+        }
+        generatingDialog = null;
+    }
+}

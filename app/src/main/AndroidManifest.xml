@@ -6,7 +6,6 @@
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -36,23 +35,7 @@
             android:theme="@style/zxing_CaptureTheme"
             android:windowSoftInputMode="stateAlwaysHidden" />
         <activity
-            android:name=".scanner.impl.MlKitBarcodeScanner$MlKitScanActivity"
-            android:screenOrientation="fullSensor"
-            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
-            android:stateNotNeeded="true"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-            android:windowSoftInputMode="stateAlwaysHidden"
-            android:exported="false" />
-        <activity
             android:name=".scanner.impl.UnifiedScanActivity"
-            android:screenOrientation="fullSensor"
-            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
-            android:stateNotNeeded="true"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-            android:windowSoftInputMode="stateAlwaysHidden"
-            android:exported="false" />
-        <activity
-            android:name=".scanner.impl.HuaweiBarcodeScanner$HuaweiScanActivity"
             android:screenOrientation="fullSensor"
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
             android:stateNotNeeded="true"
