@@ -76,20 +76,8 @@ public class MainActivity extends AppCompatActivity {
         textTitle = findViewById(R.id.textTitle);
         textEngineLabel = findViewById(R.id.text_engine_label);
 
-        // 初始化扫码引擎：优先用户上次选择；未选择或所选不可用时，
-        // 默认使用 ML Kit Barcode Scanning 独立版本（Google MLK）
-        BarcodeScannerFactory.ScannerType savedType = loadSelectedScannerType();
-        if (savedType != null) {
-            BarcodeScanner candidate = BarcodeScannerFactory.createScanner(savedType);
-            if (candidate.isAvailable(this)) {
-                barcodeScanner = candidate;
-            } else {
-                barcodeScanner = BarcodeScannerFactory.createScanner(BarcodeScannerFactory.ScannerType.ML_KIT_STANDALONE);
-            }
-        } else {
-            barcodeScanner = BarcodeScannerFactory.createScanner(BarcodeScannerFactory.ScannerType.ML_KIT_STANDALONE);
-        }
-        updateTitleLabel();
+        // 新用户、无有效偏好或上次选择已不可用时，默认 GOOGLE ML。
+        syncSelectedScanner();
 
         textTitle.setOnClickListener(v -> {
             v.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);
@@ -160,9 +148,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void showScannerChoiceDialog() {
         java.util.List<BarcodeScannerFactory.ScannerType> typeList = new java.util.ArrayList<>();
-        for (BarcodeScannerFactory.ScannerType t : BarcodeScannerFactory.ScannerType.values()) {
-            typeList.add(t);
-        }
+        // 仅展示当前设备支持的引擎；非华为/荣耀设备不会出现 HMS。
+        typeList.addAll(BarcodeScannerFactory.getSupportedTypes(this));
         java.util.List<CharSequence> names = new java.util.ArrayList<>();
         java.util.List<Boolean> availables = new java.util.ArrayList<>();
         String currentName = barcodeScanner != null ? barcodeScanner.getName() : null;
@@ -212,6 +199,25 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "已切换到：" + s.getName(), Toast.LENGTH_SHORT).show();
         });
         builder.show();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 扫码页内切换也写入同一偏好；回到主界面必须显示用户最后选中的方案。
+        syncSelectedScanner();
+    }
+
+    private void syncSelectedScanner() {
+        BarcodeScannerFactory.ScannerType savedType = loadSelectedScannerType();
+        BarcodeScanner candidate = savedType == null ? null : BarcodeScannerFactory.createScanner(savedType);
+        if (candidate == null || !candidate.isAvailable(this)) {
+            savedType = BarcodeScannerFactory.ScannerType.ML_KIT_STANDALONE;
+            candidate = BarcodeScannerFactory.createScanner(savedType);
+            saveSelectedScannerType(savedType);
+        }
+        barcodeScanner = candidate;
+        updateTitleLabel();
     }
 
     /** 引擎胶囊显示当前扫码方案，更新时使用轻量文字过渡。 */

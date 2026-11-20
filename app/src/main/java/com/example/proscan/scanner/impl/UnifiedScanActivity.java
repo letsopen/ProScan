@@ -585,7 +585,8 @@ public class UnifiedScanActivity extends AppCompatActivity {
     }
 
     private class ScannerOptionsAdapter extends RecyclerView.Adapter<ScannerOptionsAdapter.Holder> {
-        private final BarcodeScannerFactory.ScannerType[] values = BarcodeScannerFactory.ScannerType.values();
+        private final java.util.List<BarcodeScannerFactory.ScannerType> values =
+                BarcodeScannerFactory.getSupportedTypes(UnifiedScanActivity.this);
         private final java.util.function.Consumer<BarcodeScannerFactory.ScannerType> onSelect;
         ScannerOptionsAdapter(java.util.function.Consumer<BarcodeScannerFactory.ScannerType> onSelect) {
             this.onSelect = onSelect;
@@ -594,7 +595,7 @@ public class UnifiedScanActivity extends AppCompatActivity {
             return new Holder(getLayoutInflater().inflate(R.layout.item_scanner_option, parent, false));
         }
         @Override public void onBindViewHolder(@NonNull Holder holder, int position) {
-            BarcodeScannerFactory.ScannerType type = values[position];
+            BarcodeScannerFactory.ScannerType type = values.get(position);
             BarcodeScanner scanner = BarcodeScannerFactory.createScanner(type);
             boolean available = scanner.isAvailable(UnifiedScanActivity.this);
             boolean selected = type.name().equals(decoder);
@@ -606,7 +607,7 @@ public class UnifiedScanActivity extends AppCompatActivity {
             holder.itemView.setAlpha(available ? 1f : 0.55f);
             holder.itemView.setOnClickListener(v -> onSelect.accept(type));
         }
-        @Override public int getItemCount() { return values.length; }
+        @Override public int getItemCount() { return values.size(); }
         class Holder extends RecyclerView.ViewHolder {
             final TextView name = itemView.findViewById(R.id.option_name);
             final TextView status = itemView.findViewById(R.id.option_status);

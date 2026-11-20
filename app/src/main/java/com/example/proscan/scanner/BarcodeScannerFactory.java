@@ -34,6 +34,21 @@ public class BarcodeScannerFactory {
         }
     }
 
+    /**
+     * 当前设备应展示、可创建的引擎。
+     * 华为/荣耀设备可展示 HMS（再经 isAvailable 检查运行条件），其他品牌直接隐藏；
+     * 避免“装了 HMS Core 的非华为设备”仍出现不可用入口。
+     */
+    public static java.util.List<ScannerType> getSupportedTypes(Activity activity) {
+        java.util.List<ScannerType> types = new java.util.ArrayList<>();
+        for (ScannerType type : ScannerType.values()) {
+            if (createScanner(type).isAvailable(activity)) {
+                types.add(type);
+            }
+        }
+        return types;
+    }
+
     private static ScannerType defaultType = ScannerType.ML_KIT_STANDALONE;
 
     /**
