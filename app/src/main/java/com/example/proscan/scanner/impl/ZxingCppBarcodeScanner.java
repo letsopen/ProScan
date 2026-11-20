@@ -21,7 +21,7 @@ public class ZxingCppBarcodeScanner implements BarcodeScanner {
 
     @Override
     public String getName() {
-        return "ZXING-CPP";
+        return "ZXING CPP";
     }
 
     @Override

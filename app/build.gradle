@@ -9,8 +9,8 @@ android {
         applicationId "com.example.proscan" // 可选：修改应用包名
         minSdkVersion 30  // 最低支持 Android 11
         targetSdkVersion 34
-        versionCode 27
-        versionName "2.8"  // 版本更新
+        versionCode 28
+        versionName "3.0"  // 版本更新
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
         }

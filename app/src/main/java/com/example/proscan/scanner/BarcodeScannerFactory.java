@@ -19,8 +19,8 @@ public class BarcodeScannerFactory {
      */
     public enum ScannerType {
         HUAWEI_SCAN_KIT("HUAWEI HMS"),     // 华为 HMS Core Scan Kit
-        ML_KIT_STANDALONE("GOOGLE MLK"),   // ML Kit Barcode Scanning 独立版本（默认，不需要 Google Play Services）
-        ZXING_CPP("ZXING-CPP");            // ZXing-CPP（原生实现）
+        ML_KIT_STANDALONE("GOOGLE ML"),   // ML Kit Barcode Scanning 独立版本（默认，不需要 Google Play Services）
+        ZXING_CPP("ZXING CPP");            // ZXing-CPP（原生实现）
 
         private final String label;
 
