@@ -62,7 +62,7 @@
 #### `HuaweiBarcodeScanner`（Huawei HMS）
 - 使用**增强版 scanplus**（`com.huawei.hms:scanplus`，非基础版 scan）——AI 增强算法，专门针对曲面、反光、污损、小码优化
 - 实时流走 `HmsScanAnalyzer` + `MLFrame.fromByteBuffer`（YUV NV21 直读，`setPhotoMode(false)` 避免静态图慢速管线），quadrant 透传相机旋转角度
-- 在华为/荣耀设备上优先可用（`isAvailable` 检查厂商 + HMS Core）
+- 以 `HuaweiApiAvailability` 检测 HMS Core 实际服务状态，不限制设备品牌；未安装/不兼容时隐藏入口
 
 ### 解码中枢
 
@@ -146,7 +146,8 @@ implementation "androidx.camera:camera-lifecycle:${camerax_version}"
 implementation "androidx.camera:camera-view:${camerax_version}"
 
 // 华为 HMS Core Scan Kit
-implementation 'com.huawei.hms:scan:2.12.0.300'
+implementation 'com.huawei.hms:scanplus:2.12.0.300'
+implementation 'com.huawei.hms:base:6.11.0.300' // HMS Core 可用性检测
 ```
 
 ### 架构（ABI）

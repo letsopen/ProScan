@@ -5,7 +5,8 @@ import android.content.Intent;
 
 import com.example.proscan.scanner.BarcodeScanner;
 import com.example.proscan.scanner.ScanCallbackHolder;
-import com.huawei.hms.ml.scan.HmsScanAnalyzerOptions;
+import com.huawei.hms.api.ConnectionResult;
+import com.huawei.hms.api.HuaweiApiAvailability;
 
 /**
  * 华为 HMS Core Scan Kit 扫码实现
@@ -28,19 +29,14 @@ public class HuaweiBarcodeScanner implements BarcodeScanner {
 
     @Override
     public boolean isAvailable(Activity activity) {
-        // 1. 首先检查制造商是否为 Huawei 或 Honor
-        String manufacturer = android.os.Build.MANUFACTURER;
-        if (!"HUAWEI".equalsIgnoreCase(manufacturer) && !"HONOR".equalsIgnoreCase(manufacturer)) {
-            return false;
-        }
-
-        // 2. 检查是否在华为设备上，或者是否安装了HMS Core
+        // 以 HMS Core 实际服务状态为准，不限制设备品牌。
+        // 未安装、版本不兼容、被禁用或需更新时均隐藏入口，避免选中后才发现不可用。
         try {
-            // 简单检查：尝试创建扫码选项
-            HmsScanAnalyzerOptions options = new HmsScanAnalyzerOptions.Creator().create();
-            return options != null;
-        } catch (NoClassDefFoundError | Exception e) {
-            // 如果类不存在，说明HMS Core未安装或不可用
+            int status = HuaweiApiAvailability.getInstance()
+                    .isHuaweiMobileServicesAvailable(activity.getApplicationContext());
+            return status == ConnectionResult.SUCCESS;
+        } catch (Throwable t) {
+            // 服务 SDK 初始化异常时安全回落到其他引擎。
             return false;
         }
     }

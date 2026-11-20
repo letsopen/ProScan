@@ -9,7 +9,7 @@ android {
         applicationId "com.example.proscan" // 可选：修改应用包名
         minSdkVersion 30  // 最低支持 Android 11
         targetSdkVersion 34
-        versionCode 29
+        versionCode 30
         versionName "3.0"  // 版本更新
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
@@ -72,4 +72,6 @@ dependencies {
     // 华为 HMS Core Scan Kit 增强版（scanplus，针对曲面/反光/污损/小码优化的 AI 增强算法）
     // 基础版 scan 算法较弱，条码识别场景务必使用 scanplus
     implementation 'com.huawei.hms:scanplus:2.12.0.300'
+    // HMS Core 实际服务可用性检测；不限制设备品牌，不新增运行时权限
+    implementation 'com.huawei.hms:base:6.11.0.300'
 }
