@@ -23,7 +23,7 @@ public class HuaweiBarcodeScanner implements BarcodeScanner {
 
     @Override
     public String getName() {
-        return "Huawei HMS";
+        return "HUAWEI HMS";
     }
 
     @Override

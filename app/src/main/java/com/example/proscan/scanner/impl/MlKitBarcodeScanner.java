@@ -23,7 +23,7 @@ public class MlKitBarcodeScanner implements BarcodeScanner {
 
     @Override
     public String getName() {
-        return "Google MLK";
+        return "GOOGLE MLK";
     }
 
     @Override

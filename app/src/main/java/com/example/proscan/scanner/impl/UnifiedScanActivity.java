@@ -332,26 +332,24 @@ public class UnifiedScanActivity extends AppCompatActivity {
 
     @OptIn(markerClass = androidx.camera.core.ExperimentalGetImage.class)
     private void processMlkit(ImageProxy image, int generation) {
-        // 保留 ML Kit 原生 YUV 识别管线；结果坐标按当前 cropRect 转换到传感器坐标后筛选。
-        // 相比先转 Bitmap，这条路径不会损失条码细节，也不需要额外 JPEG 编解码。
+        // ML Kit 在 rotationDegrees 非零时输出旋转后的图像坐标，不能用传感器原始 cropRect 过滤。
         Rect crop = sensorCropRect(image);
-        image.setCropRect(crop);
-        InputImage inputImage = InputImage.fromMediaImage(image.getImage(),
-                image.getImageInfo().getRotationDegrees());
+        int rotation = image.getImageInfo().getRotationDegrees();
+        Rect orientedCrop = orientedCropRect(crop, image.getWidth(), image.getHeight(), rotation);
+        InputImage inputImage = InputImage.fromMediaImage(image.getImage(), rotation);
         mlkitScanner.process(inputImage).addOnSuccessListener(barcodes -> {
             if (!barcodes.isEmpty() && active && generation == decoderGeneration) {
                 for (Barcode barcode : barcodes) {
                     android.graphics.Point[] corners = barcode.getCornerPoints();
-                    if (corners == null || corners.length == 0) continue;
+                    if (corners == null || corners.length == 0 || barcode.getRawValue() == null) continue;
                     long x = 0, y = 0;
                     for (android.graphics.Point point : corners) {
-                        x += point.x + crop.left;
-                        y += point.y + crop.top;
+                        x += point.x;
+                        y += point.y;
                     }
                     x /= corners.length;
                     y /= corners.length;
-                    if (x >= crop.left && x < crop.right && y >= crop.top && y < crop.bottom
-                            && barcode.getRawValue() != null) {
+                    if (orientedCrop.contains((int) x, (int) y)) {
                         onDecodeCandidate(barcode.getRawValue(), mlKitFormat(barcode.getFormat()), generation);
                         break;
                     }
@@ -363,6 +361,22 @@ public class UnifiedScanActivity extends AppCompatActivity {
             processing = false;
             image.close();
         });
+    }
+
+    /** ML Kit 坐标已按 rotationDegrees 旋正，将传感器取景区域同步旋正后再比较。 */
+    private static Rect orientedCropRect(Rect crop, int sensorWidth, int sensorHeight, int rotation) {
+        if (rotation == 90) {
+            return new Rect(sensorHeight - crop.bottom, crop.left,
+                    sensorHeight - crop.top, crop.right);
+        }
+        if (rotation == 180) {
+            return new Rect(sensorWidth - crop.right, sensorHeight - crop.bottom,
+                    sensorWidth - crop.left, sensorHeight - crop.top);
+        }
+        if (rotation == 270) {
+            return new Rect(crop.top, sensorWidth - crop.right, crop.bottom, sensorWidth - crop.left);
+        }
+        return crop;
     }
 
     private void processHuaweiFrame(ImageProxy image, int generation) {
@@ -424,17 +438,14 @@ public class UnifiedScanActivity extends AppCompatActivity {
         float scale = Math.max(viewWidth / rotatedWidth, viewHeight / rotatedHeight);
         float offsetX = (rotatedWidth * scale - viewWidth) / 2f;
         float offsetY = (rotatedHeight * scale - viewHeight) / 2f;
-        // 4% 余量仅避免贴边截断，仍严格限制在取景框附近。
         float paddingX = frame.width() * 0.04f;
         float paddingY = frame.height() * 0.04f;
         float rx = (frame.left - paddingX + offsetX) / scale;
         float ry = (frame.top - paddingY + offsetY) / scale;
         float rw = (frame.width() + paddingX * 2) / scale;
         float rh = (frame.height() + paddingY * 2) / scale;
-        int left;
-        int top;
-        int right;
-        int bottom;
+        int left = Math.round(rx), top = Math.round(ry);
+        int right = Math.round(rx + rw), bottom = Math.round(ry + rh);
         if (rotationDegrees == 90) {
             left = Math.round(ry);
             top = Math.round(bufferHeight - rx - rw);
@@ -450,11 +461,6 @@ public class UnifiedScanActivity extends AppCompatActivity {
             top = Math.round(rx);
             right = Math.round(bufferWidth - ry);
             bottom = Math.round(rx + rw);
-        } else {
-            left = Math.round(rx);
-            top = Math.round(ry);
-            right = Math.round(rx + rw);
-            bottom = Math.round(ry + rh);
         }
         left = Math.max(0, left) & ~1;
         top = Math.max(0, top) & ~1;
