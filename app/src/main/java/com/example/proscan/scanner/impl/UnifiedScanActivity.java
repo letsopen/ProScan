@@ -332,21 +332,34 @@ public class UnifiedScanActivity extends AppCompatActivity {
 
     @OptIn(markerClass = androidx.camera.core.ExperimentalGetImage.class)
     private void processMlkit(ImageProxy image, int generation) {
-        // 输入位图按取景框裁剪并转正；ML Kit 此时接收 0 度位图，不再自行旋转整帧。
-        Bitmap cropped = cropFrameToBitmap(image);
-        if (cropped == null) {
-            processing = false;
-            image.close();
-            return;
-        }
-        mlkitScanner.process(InputImage.fromBitmap(cropped, 0)).addOnSuccessListener(barcodes -> {
+        // 保留 ML Kit 原生 YUV 识别管线；结果坐标按当前 cropRect 转换到传感器坐标后筛选。
+        // 相比先转 Bitmap，这条路径不会损失条码细节，也不需要额外 JPEG 编解码。
+        Rect crop = sensorCropRect(image);
+        image.setCropRect(crop);
+        InputImage inputImage = InputImage.fromMediaImage(image.getImage(),
+                image.getImageInfo().getRotationDegrees());
+        mlkitScanner.process(inputImage).addOnSuccessListener(barcodes -> {
             if (!barcodes.isEmpty() && active && generation == decoderGeneration) {
-                Barcode barcode = barcodes.get(0);
-                String value = barcode.getRawValue();
-                if (value != null) onDecodeCandidate(value, mlKitFormat(barcode.getFormat()), generation);
+                for (Barcode barcode : barcodes) {
+                    android.graphics.Point[] corners = barcode.getCornerPoints();
+                    if (corners == null || corners.length == 0) continue;
+                    long x = 0, y = 0;
+                    for (android.graphics.Point point : corners) {
+                        x += point.x + crop.left;
+                        y += point.y + crop.top;
+                    }
+                    x /= corners.length;
+                    y /= corners.length;
+                    if (x >= crop.left && x < crop.right && y >= crop.top && y < crop.bottom
+                            && barcode.getRawValue() != null) {
+                        onDecodeCandidate(barcode.getRawValue(), mlKitFormat(barcode.getFormat()), generation);
+                        break;
+                    }
+                }
             }
-        }).addOnFailureListener(e -> { }).addOnCompleteListener(task -> {
-            cropped.recycle();
+        }).addOnFailureListener(e -> {
+            android.util.Log.w(TAG, "ML Kit frame failed: " + e.getMessage());
+        }).addOnCompleteListener(task -> {
             processing = false;
             image.close();
         });
@@ -355,25 +368,30 @@ public class UnifiedScanActivity extends AppCompatActivity {
     private void processHuaweiFrame(ImageProxy image, int generation) {
         Bitmap cropped = null;
         try {
-            cropped = cropFrameToBitmap(image);
-            if (cropped != null) {
-                boolean handled = false;
-                try {
-                    // 主路径和 Bitmap 回退共用同一帧、同一裁剪区域，杜绝回退扫到框外。
-                    MLFrame frame = MLFrame.fromBitmap(cropped);
-                    android.util.SparseArray<HmsScan> scans = hmsAnalyzer.analyseFrame(frame);
-                    if (scans != null && scans.size() > 0 && active && generation == decoderGeneration) {
-                        HmsScan scan = scans.valueAt(0);
-                        String value = scan.getOriginalValue();
-                        if (value != null) {
-                            handled = true;
-                            onDecodeCandidate(value, hmsFormat(scan.getScanTypeForm()), generation);
-                        }
+            Rect crop = sensorCropRect(image);
+            image.setCropRect(crop);
+            byte[] nv21 = yuv420ToNv21(image);
+            boolean handled = false;
+            try {
+                // 正确复制 cropRect 内的 YUV 像素，恢复 HMS 原生 NV21 直读路径。
+                MLFrame frame = new MLFrame.Creator().writeByteBufferData(ByteBuffer.wrap(nv21),
+                        crop.width(), crop.height(), ImageFormat.NV21)
+                        .setQuadrant(image.getImageInfo().getRotationDegrees() / 90).create();
+                android.util.SparseArray<HmsScan> scans = hmsAnalyzer.analyseFrame(frame);
+                if (scans != null && scans.size() > 0 && active && generation == decoderGeneration) {
+                    HmsScan scan = scans.valueAt(0);
+                    if (scan.getOriginalValue() != null) {
+                        handled = true;
+                        onDecodeCandidate(scan.getOriginalValue(), hmsFormat(scan.getScanTypeForm()), generation);
                     }
-                } catch (Throwable t) {
-                    android.util.Log.w(TAG, "HMS analyzer frame failed: " + t);
                 }
-                if (!handled && active && generation == decoderGeneration) {
+            } catch (Throwable t) {
+                android.util.Log.w(TAG, "HMS analyzer frame failed: " + t);
+            }
+            if (!handled && active && generation == decoderGeneration) {
+                cropped = nv21ToBitmap(nv21, crop.width(), crop.height(),
+                        image.getImageInfo().getRotationDegrees());
+                if (cropped != null) {
                     HmsScan[] scans = ScanUtil.decodeWithBitmap(getApplicationContext(), cropped,
                             new HmsScanAnalyzerOptions.Creator().setHmsScanTypes(HmsScan.ALL_SCAN_TYPE)
                                     .setPhotoMode(false).setParseResult(true).create());
@@ -451,18 +469,13 @@ public class UnifiedScanActivity extends AppCompatActivity {
                 image.getWidth(), image.getHeight(), image.getImageInfo().getRotationDegrees());
     }
 
-    /** 仅将取景框内区域转换为正向 Bitmap，供 ML Kit 与 HMS 使用。 */
-    @OptIn(markerClass = androidx.camera.core.ExperimentalGetImage.class)
-    private Bitmap cropFrameToBitmap(ImageProxy image) {
+    /** 将已正确裁剪的 NV21 转换为正向 Bitmap，仅用于 HMS 回退。 */
+    private Bitmap nv21ToBitmap(byte[] nv21, int width, int height, int rotation) {
         try {
-            Rect crop = sensorCropRect(image);
-            image.setCropRect(crop);
-            byte[] nv21 = yuv420ToNv21(image);
-            YuvImage yuv = new YuvImage(nv21, ImageFormat.NV21, crop.width(), crop.height(), null);
+            YuvImage yuv = new YuvImage(nv21, ImageFormat.NV21, width, height, null);
             ByteArrayOutputStream output = new ByteArrayOutputStream();
-            yuv.compressToJpeg(new Rect(0, 0, crop.width(), crop.height()), 90, output);
+            yuv.compressToJpeg(new Rect(0, 0, width, height), 90, output);
             Bitmap bitmap = android.graphics.BitmapFactory.decodeByteArray(output.toByteArray(), 0, output.size());
-            int rotation = image.getImageInfo().getRotationDegrees();
             if (rotation != 0) {
                 android.graphics.Matrix matrix = new android.graphics.Matrix();
                 matrix.postRotate(rotation);
@@ -472,10 +485,11 @@ public class UnifiedScanActivity extends AppCompatActivity {
             }
             return bitmap;
         } catch (Throwable t) {
-            android.util.Log.w(TAG, "Viewfinder crop failed: " + t);
+            android.util.Log.w(TAG, "HMS cropped bitmap failed: " + t);
             return null;
         }
     }
+
 
     private void createDecoder() {
         if ("ZXING_CPP".equals(decoder)) {
@@ -748,26 +762,29 @@ public class UnifiedScanActivity extends AppCompatActivity {
 
     private byte[] yuv420ToNv21(ImageProxy image) {
         ImageProxy.PlaneProxy[] planes = image.getPlanes();
-        int width = image.getWidth(), height = image.getHeight();
+        Rect crop = image.getCropRect();
+        int width = crop.width(), height = crop.height();
         byte[] nv21 = new byte[width * height * 3 / 2];
         int pos = 0;
         ImageProxy.PlaneProxy yPlane = planes[0], uPlane = planes[1], vPlane = planes[2];
+        ByteBuffer yBuffer = yPlane.getBuffer().duplicate();
+        ByteBuffer uBuffer = uPlane.getBuffer().duplicate();
+        ByteBuffer vBuffer = vPlane.getBuffer().duplicate();
         int rowStrideY = yPlane.getRowStride(), pixelStrideY = yPlane.getPixelStride();
-        byte[] yBuffer = new byte[yPlane.getBuffer().remaining()];
-        yPlane.getBuffer().get(yBuffer);
         for (int row = 0; row < height; row++) {
-            int offset = row * rowStrideY;
-            for (int col = 0; col < width; col++) nv21[pos++] = yBuffer[offset + col * pixelStrideY];
+            for (int col = 0; col < width; col++) {
+                int offset = (crop.top + row) * rowStrideY + (crop.left + col) * pixelStrideY;
+                nv21[pos++] = yBuffer.get(offset);
+            }
         }
         int rowStrideU = uPlane.getRowStride(), pixelStrideU = uPlane.getPixelStride();
         int rowStrideV = vPlane.getRowStride(), pixelStrideV = vPlane.getPixelStride();
-        byte[] uBuffer = new byte[uPlane.getBuffer().remaining()], vBuffer = new byte[vPlane.getBuffer().remaining()];
-        uPlane.getBuffer().get(uBuffer); vPlane.getBuffer().get(vBuffer);
         for (int row = 0; row < height / 2; row++) {
-            int uRowOffset = row * rowStrideU, vRowOffset = row * rowStrideV;
             for (int col = 0; col < width / 2; col++) {
-                nv21[pos++] = vBuffer[vRowOffset + col * pixelStrideV];
-                nv21[pos++] = uBuffer[uRowOffset + col * pixelStrideU];
+                int uvRow = crop.top / 2 + row;
+                int uvCol = crop.left / 2 + col;
+                nv21[pos++] = vBuffer.get(uvRow * rowStrideV + uvCol * pixelStrideV);
+                nv21[pos++] = uBuffer.get(uvRow * rowStrideU + uvCol * pixelStrideU);
             }
         }
         return nv21;
