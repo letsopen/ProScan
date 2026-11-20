@@ -8,7 +8,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.Toast;
 
 import android.Manifest;
@@ -49,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private Button buttonScan;
     private Button buttonPaste;
     private Button btnVisit;
-    private ImageButton buttonHistory;
+    private Button buttonHistory;
     private android.view.View textTitle;
     private TextView textEngineLabel;
     private HistoryDbHelper dbHelper;

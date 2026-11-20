@@ -3,7 +3,7 @@ package io.github.letsopen.proscan.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -83,7 +83,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         TextView textContent;
         TextView textType;
         TextView textTime;
-        ImageButton buttonDelete;
+        Button buttonDelete;
 
         ViewHolder(View view) {
             super(view);

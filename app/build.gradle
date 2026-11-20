@@ -9,7 +9,7 @@ android {
         applicationId = "io.github.letsopen.proscan"
         minSdkVersion 30  // 最低支持 Android 11
         targetSdkVersion 34
-        versionCode 32
+        versionCode 33
         versionName "3.0"  // 版本更新
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
