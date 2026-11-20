@@ -60,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_SCANNER_TYPE = "scanner_type";
 
     private static final int PERMISSION_REQUEST_CAMERA = 100;
+    private androidx.activity.result.ActivityResultLauncher<Intent> historyLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +69,14 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         dbHelper = HistoryDbHelper.getInstance(this);
+        historyLauncher = registerForActivityResult(
+                new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(), result -> {
+                    Intent data = result.getData();
+                    if (result.getResultCode() == RESULT_OK && data != null) {
+                        String content = data.getStringExtra("content");
+                        if (content != null) editTextUrl.setText(content);
+                    }
+                });
         editTextUrl = findViewById(R.id.editTextUrl);
         buttonScan = findViewById(R.id.buttonScan);
         buttonPaste = findViewById(R.id.buttonPaste);
@@ -124,8 +133,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         buttonHistory.setOnClickListener(v -> {
-            Intent intent = new Intent(this, HistoryActivity.class);
-            startActivityForResult(intent, 1);
+            historyLauncher.launch(new Intent(this, HistoryActivity.class));
         });
 
         Button btnBarcode = findViewById(R.id.btnBarcode);
@@ -324,25 +332,19 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        // 处理从历史记录返回的内容
-        if (requestCode == 1 && resultCode == RESULT_OK && data != null) {
-            String content = data.getStringExtra("content");
-            if (content != null) {
-                editTextUrl.setText(content);
-            }
-        } else if (requestCode == 2 && resultCode == RESULT_OK && data != null) {
+        // 扫码页尚未迁移引擎接口的 Activity Result 启动方式，仅在这里保留桥接。
+        if (requestCode == 2 && resultCode == RESULT_OK && data != null) {
             String content = data.getStringExtra("scan_text");
             if (content != null) {
-                String format = data.getStringExtra("scan_format");
-                String engine = data.getStringExtra("scan_engine");
                 editTextUrl.setText(content);
                 dbHelper.addHistoryItem(content, "scan");
-                showScanResult(content, format, engine);
+                showScanResult(content, data.getStringExtra("scan_format"), data.getStringExtra("scan_engine"));
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
     }
+
 
     private void showScanResult(String content, String format, String engine) {
         com.google.android.material.bottomsheet.BottomSheetDialog dialog =

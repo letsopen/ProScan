@@ -9,7 +9,7 @@ android {
         applicationId "com.example.proscan" // 可选：修改应用包名
         minSdkVersion 30  // 最低支持 Android 11
         targetSdkVersion 34
-        versionCode 30
+        versionCode 31
         versionName "3.0"  // 版本更新
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
@@ -36,14 +36,21 @@ android {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            signingConfig = signingConfigs.release
         }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
-    namespace 'com.example.proscan'
+    // 源码未引用 BuildConfig，无需生成；替代已废弃的全局 defaults 开关。
+    buildFeatures {
+        buildConfig = false
+    }
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs += ['-Xlint:deprecation']
+    }
+    namespace = 'com.example.proscan'
 }
 
 dependencies {

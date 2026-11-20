@@ -127,6 +127,9 @@ public class UnifiedScanActivity extends AppCompatActivity {
         createDecoder();
         setupInsets();
         setupControls();
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() { cancelScan(); }
+        });
         setupPhotoPicker();
         findViewById(R.id.button_gallery).setOnClickListener(v -> {
             if (!readingPhoto) {
@@ -713,8 +716,17 @@ public class UnifiedScanActivity extends AppCompatActivity {
         if (destroyed || successEmitted) return;
         successEmitted = true;
         active = false;
-        Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        if (vibrator != null && vibrator.hasVibrator()) vibrator.vibrate(60);
+        Vibrator vibrator;
+        if (android.os.Build.VERSION.SDK_INT >= 31) {
+            android.os.VibratorManager manager = getSystemService(android.os.VibratorManager.class);
+            vibrator = manager == null ? null : manager.getDefaultVibrator();
+        } else {
+            vibrator = getLegacyVibrator();
+        }
+        if (vibrator != null && vibrator.hasVibrator()) {
+            vibrator.vibrate(android.os.VibrationEffect.createOneShot(60,
+                    android.os.VibrationEffect.DEFAULT_AMPLITUDE));
+        }
         if (callback != null) callback.onSuccess(result.getText());
         android.content.Intent data = new android.content.Intent();
         data.putExtra("scan_text", result.getText());
@@ -724,13 +736,18 @@ public class UnifiedScanActivity extends AppCompatActivity {
         runOnUiThread(this::finish);
     }
 
+    /** Android 11/12 的兼容振动入口；Android 13+ 使用 VibratorManager。 */
+    @SuppressWarnings("deprecation")
+    private Vibrator getLegacyVibrator() {
+        return (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+    }
+
     private void cancelScan() {
         active = false;
         if (callback != null) callback.onCancel();
         finish();
     }
 
-    @Override public void onBackPressed() { cancelScan(); }
 
     private void applyBottomInsets(BottomSheetDialog dialog, View content, boolean dark) {
         ViewCompat.setOnApplyWindowInsetsListener(content, (v, insets) -> {
