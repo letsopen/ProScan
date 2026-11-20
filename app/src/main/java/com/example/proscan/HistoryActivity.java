@@ -31,8 +31,8 @@ public class HistoryActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_history);
-
         dbHelper = HistoryDbHelper.getInstance(this);
         historyList = new ArrayList<>();
 
@@ -77,6 +77,7 @@ public class HistoryActivity extends AppCompatActivity {
             }
         });
         recyclerView.setAdapter(adapter);
+        applyHistoryInsets();
 
         // 设置删除全部按钮点击事件
         findViewById(R.id.buttonClearAll).setOnClickListener(v -> {
@@ -100,6 +101,19 @@ public class HistoryActivity extends AppCompatActivity {
         });
 
         loadHistory();
+    }
+
+    private void applyHistoryInsets() {
+        final int headerTop = findViewById(R.id.history_header).getPaddingTop();
+        final int listBottom = recyclerView.getPaddingBottom();
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.history_root), (v, insets) -> {
+            androidx.core.graphics.Insets bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars());
+            android.view.View header = findViewById(R.id.history_header);
+            header.setPadding(header.getPaddingLeft(), headerTop + bars.top, header.getPaddingRight(), header.getPaddingBottom());
+            recyclerView.setPadding(recyclerView.getPaddingLeft(), recyclerView.getPaddingTop(),
+                    recyclerView.getPaddingRight(), listBottom + bars.bottom);
+            return androidx.core.view.WindowInsetsCompat.CONSUMED;
+        });
     }
 
     private void loadHistory() {

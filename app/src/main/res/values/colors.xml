@@ -1,16 +1,24 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#FFFFFF</color>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="primary_color">#2196F3</color>
-    <color name="background_color">#F5F5F5</color>
-    <color name="scan_button_color">#4CAF50</color>
-    <color name="paste_button_color">#FF9800</color>
-    <color name="launch_button_color">#2196F3</color>
-</resources> 
+    <color name="accent_amber">#FFD60A</color>
+    <color name="accent_blue">#007AFF</color>
+    <color name="surface_primary">#F5F5F7</color>
+    <color name="surface_card">#FFFFFF</color>
+    <color name="surface_muted">#F2F2F7</color>
+    <color name="surface_pressed">#E5E5EA</color>
+    <color name="text_primary">#1D1D1F</color>
+    <color name="text_secondary">#86868B</color>
+    <color name="text_tertiary">#AEAEB2</color>
+    <color name="separator">#E5E5EA</color>
+    <color name="camera_scrim">#66000000</color>
+    <color name="camera_control">#661C1C1E</color>
+    <color name="camera_control_pressed">#8A1C1C1E</color>
+    <color name="camera_stroke">#38FFFFFF</color>
+    <color name="camera_sheet">#F21C1C1E</color>
+    <color name="camera_sheet_secondary">#2C2C2E</color>
+    <color name="camera_text_secondary">#AEAEB2</color>
+    <color name="danger">#FF3B30</color>
+    <color name="transparent">#00000000</color>
+</resources>

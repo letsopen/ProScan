@@ -13,7 +13,7 @@
         android:label="Pro Scan"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+        android:theme="@style/Theme.ProScan">
         
         <activity
             android:name=".MainActivity"
@@ -29,7 +29,7 @@
             android:screenOrientation="fullSensor"
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
             android:stateNotNeeded="true"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:theme="@style/Theme.ProScan.Camera"
             android:windowSoftInputMode="stateAlwaysHidden"
             android:exported="false" />
         <activity

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
@@ -12,100 +13,85 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
+import com.example.proscan.R;
+
 /**
- * 扫码遮罩层 View
- * 绘制半透明背景和中间透明的取景框
+ * iOS Camera 风格取景层：40% 炭黑蒙版、圆角镂空和琥珀黄 L 型四角。
+ * 画笔与 Path 只在初始化时创建，绘制阶段无对象分配。
  */
 public class ViewfinderView extends View {
-    private Paint maskPaint;
-    private Paint framePaint;
-    private Paint cornerPaint;
-    private RectF frameRect;
-    private int maskColor = Color.parseColor("#80000000"); // 半透明黑色
-    private int frameColor = Color.WHITE;
-    private int cornerWidth = 10;
-    private int cornerLength = 60;
-    
-    public ViewfinderView(Context context) {
-        super(context);
-        init();
-    }
+    private static final float FRAME_WIDTH_RATIO = 0.76f;
+    private static final float FRAME_HEIGHT_RATIO = 0.72f;
+    private final Paint maskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint cornerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF frameRect = new RectF();
+    private final Path cornerPath = new Path();
+    private float cornerLength;
+    private float cornerRadius;
 
-    public ViewfinderView(Context context, @Nullable AttributeSet attrs) {
-        super(context, attrs);
-        init();
-    }
-
+    public ViewfinderView(Context context) { super(context); init(); }
+    public ViewfinderView(Context context, @Nullable AttributeSet attrs) { super(context, attrs); init(); }
     public ViewfinderView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init();
+        super(context, attrs, defStyleAttr); init();
     }
 
     private void init() {
-        maskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        maskPaint.setColor(maskColor);
-
-        framePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        framePaint.setColor(frameColor);
-        framePaint.setStyle(Paint.Style.STROKE);
-        framePaint.setStrokeWidth(4);
-
-        cornerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        cornerPaint.setColor(frameColor);
+        setLayerType(LAYER_TYPE_HARDWARE, null);
+        float density = getResources().getDisplayMetrics().density;
+        cornerLength = 30 * density;
+        cornerRadius = 10 * density;
+        cornerPaint.setColor(getResources().getColor(R.color.accent_amber, getContext().getTheme()));
         cornerPaint.setStyle(Paint.Style.STROKE);
-        cornerPaint.setStrokeWidth(12);
-        
-        frameRect = new RectF();
+        cornerPaint.setStrokeWidth(4 * density);
+        cornerPaint.setStrokeCap(Paint.Cap.ROUND);
+        cornerPaint.setStrokeJoin(Paint.Join.ROUND);
     }
+
+    /** 返回相对本 View 的取景区域，供提示文字和可访问性布局使用。 */
+    public RectF getFrameRect() { return new RectF(frameRect); }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        
         int width = getWidth();
         int height = getHeight();
-        
-        // 计算中间取景框的大小（屏幕宽度的 70%）
-        int frameSize = (int) (Math.min(width, height) * 0.7);
-        int left = (width - frameSize) / 2;
-        int top = (height - frameSize) / 2;
-        int right = left + frameSize;
-        int bottom = top + frameSize;
-        
-        frameRect.set(left, top, right, bottom);
-        
-        // 1. 绘制半透明遮罩（除了中间矩形）
-        // 这里使用 layer save 来处理镂空效果
-        int layerId = canvas.saveLayer(0, 0, width, height, null);
-        
-        // 绘制全屏半透明遮罩
-        canvas.drawColor(maskColor);
-        
-        // 设置混合模式为 Clear，用于"挖空"中间部分
+        float frameWidth = Math.min(width * FRAME_WIDTH_RATIO, 340 * getResources().getDisplayMetrics().density);
+        float frameHeight = frameWidth * FRAME_HEIGHT_RATIO;
+        float left = (width - frameWidth) / 2f;
+        // 略高于视觉中心，为底部操作坞与提示文字留出呼吸空间
+        float top = (height - frameHeight) * 0.43f;
+        frameRect.set(left, top, left + frameWidth, top + frameHeight);
+
+        int layer = canvas.saveLayer(0, 0, width, height, null);
+        canvas.drawColor(getResources().getColor(R.color.camera_scrim, getContext().getTheme()));
         maskPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
-        canvas.drawRect(frameRect, maskPaint);
-        maskPaint.setXfermode(null); // 还原
-        
-        canvas.restoreToCount(layerId);
-        
-        // 2. 绘制取景框边框（细线）
-        canvas.drawRect(frameRect, framePaint);
-        
-        // 3. 绘制四个角的粗线
-        // 左上角
-        canvas.drawLine(left - 6, top, left + cornerLength, top, cornerPaint);
-        canvas.drawLine(left, top - 6, left, top + cornerLength, cornerPaint);
-        
-        // 右上角
-        canvas.drawLine(right - cornerLength, top, right + 6, top, cornerPaint);
-        canvas.drawLine(right, top - 6, right, top + cornerLength, cornerPaint);
-        
-        // 左下角
-        canvas.drawLine(left - 6, bottom, left + cornerLength, bottom, cornerPaint);
-        canvas.drawLine(left, bottom - cornerLength, left, bottom + 6, cornerPaint);
-        
-        // 右下角
-        canvas.drawLine(right - cornerLength, bottom, right + 6, bottom, cornerPaint);
-        canvas.drawLine(right, bottom - cornerLength, right, bottom + 6, cornerPaint);
+        canvas.drawRoundRect(frameRect, cornerRadius * 2, cornerRadius * 2, maskPaint);
+        maskPaint.setXfermode(null);
+        canvas.restoreToCount(layer);
+
+        float l = frameRect.left;
+        float t = frameRect.top;
+        float r = frameRect.right;
+        float b = frameRect.bottom;
+        float len = Math.min(cornerLength, frameWidth * 0.18f);
+        float cr = Math.min(cornerRadius, len / 2f);
+
+        // 四角均为连续圆弧 + 两端短线，避免生硬直角和额外完整边框
+        drawCorner(canvas, l, t, len, cr, false, false);
+        drawCorner(canvas, r, t, len, cr, true, false);
+        drawCorner(canvas, l, b, len, cr, false, true);
+        drawCorner(canvas, r, b, len, cr, true, true);
+    }
+
+    private void drawCorner(Canvas canvas, float x, float y, float len, float radius,
+                            boolean fromRight, boolean fromBottom) {
+        float sx = fromRight ? -1f : 1f;
+        float sy = fromBottom ? -1f : 1f;
+        cornerPath.reset();
+        cornerPath.moveTo(x + sx * len, y);
+        cornerPath.lineTo(x + sx * radius, y);
+        cornerPath.quadTo(x, y, x, y + sy * radius);
+        cornerPath.lineTo(x, y + sy * len);
+        canvas.drawPath(cornerPath, cornerPaint);
     }
 }

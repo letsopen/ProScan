@@ -18,7 +18,7 @@ public class HuaweiBarcodeScanner implements BarcodeScanner {
     public void startScan(Activity activity, ScanCallback callback) {
         ScanCallbackHolder.set(callback, "HUAWEI_SCAN_KIT");
         Intent intent = new Intent(activity, UnifiedScanActivity.class);
-        activity.startActivity(intent);
+        activity.startActivityForResult(intent, 2);
     }
 
     @Override

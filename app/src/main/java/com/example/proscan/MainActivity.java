@@ -22,7 +22,7 @@ import com.example.proscan.db.HistoryDbHelper;
 import com.example.proscan.scanner.BarcodeScanner;
 import com.example.proscan.scanner.BarcodeScannerFactory;
 
-// 生成功能仅用 zxing-core（识别引擎已切换为 zxing-cpp / ML Kit / BoofCV / 华为）
+// 生成功能仅用 zxing-core；识别由 ML Kit、HMS 和 ZXing-CPP 完成
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
@@ -50,7 +50,8 @@ public class MainActivity extends AppCompatActivity {
     private Button buttonPaste;
     private Button btnVisit;
     private ImageButton buttonHistory;
-    private TextView textTitle;
+    private android.view.View textTitle;
+    private TextView textEngineLabel;
     private HistoryDbHelper dbHelper;
     private BarcodeScanner barcodeScanner;
     private Dialog generatingDialog;
@@ -63,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
 
         dbHelper = HistoryDbHelper.getInstance(this);
@@ -72,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
         btnVisit = findViewById(R.id.btnVisit);
         buttonHistory = findViewById(R.id.buttonHistory);
         textTitle = findViewById(R.id.textTitle);
+        textEngineLabel = findViewById(R.id.text_engine_label);
 
         // 初始化扫码引擎：优先用户上次选择；未选择或所选不可用时，
         // 默认使用 ML Kit Barcode Scanning 独立版本（Google MLK）
@@ -88,7 +91,11 @@ public class MainActivity extends AppCompatActivity {
         }
         updateTitleLabel();
 
-        textTitle.setOnClickListener(v -> showScannerChoiceDialog());
+        textTitle.setOnClickListener(v -> {
+            v.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);
+            showScannerChoiceDialog();
+        });
+        applyMainInsets();
 
         buttonScan.setOnClickListener(v -> {
             if (checkCameraPermission()) {
@@ -140,6 +147,17 @@ public class MainActivity extends AppCompatActivity {
         btnQRCode.setOnClickListener(v -> generateQRCode());
     }
 
+    private void applyMainInsets() {
+        final int topPadding = getResources().getDimensionPixelSize(R.dimen.space_16);
+        final int bottomPadding = getResources().getDimensionPixelSize(R.dimen.space_32);
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_content), (v, insets) -> {
+            androidx.core.graphics.Insets bars = insets.getInsets(
+                    androidx.core.view.WindowInsetsCompat.Type.systemBars());
+            v.setPadding(v.getPaddingLeft(), bars.top + topPadding, v.getPaddingRight(), bars.bottom + bottomPadding);
+            return androidx.core.view.WindowInsetsCompat.CONSUMED;
+        });
+    }
+
     private void showScannerChoiceDialog() {
         java.util.List<BarcodeScannerFactory.ScannerType> typeList = new java.util.ArrayList<>();
         for (BarcodeScannerFactory.ScannerType t : BarcodeScannerFactory.ScannerType.values()) {
@@ -148,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
         java.util.List<CharSequence> names = new java.util.ArrayList<>();
         java.util.List<Boolean> availables = new java.util.ArrayList<>();
         String currentName = barcodeScanner != null ? barcodeScanner.getName() : null;
-        int highlightColor = textTitle != null ? textTitle.getCurrentTextColor() : 0xFF2196F3;
+        int highlightColor = 0xFF1D1D1F;
         for (int i = 0; i < typeList.size(); i++) {
             BarcodeScanner s = BarcodeScannerFactory.createScanner(typeList.get(i));
             boolean available = s.isAvailable(this);
@@ -196,11 +214,14 @@ public class MainActivity extends AppCompatActivity {
         builder.show();
     }
 
-    /** 主界面标题（Logo 文字）显示当前引擎的短标签 */
+    /** 引擎胶囊显示当前扫码方案，更新时使用轻量文字过渡。 */
     private void updateTitleLabel() {
-        if (textTitle != null && barcodeScanner != null) {
-            textTitle.setText(barcodeScanner.getName());
-        }
+        if (textEngineLabel == null || barcodeScanner == null) return;
+        textEngineLabel.animate().cancel();
+        textEngineLabel.setAlpha(0f);
+        textEngineLabel.setTranslationY(-3f);
+        textEngineLabel.setText(barcodeScanner.getName());
+        textEngineLabel.animate().alpha(1f).translationY(0f).setDuration(160).start();
     }
 
     private void saveSelectedScannerType(BarcodeScannerFactory.ScannerType type) {
@@ -273,10 +294,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onSuccess(String result) {
                     runOnUiThread(() -> {
                         if (result != null && !result.isEmpty()) {
-                            editTextUrl.setText("");
-                            editTextUrl.setText(result);
-                            dbHelper.addHistoryItem(result, "scan");
-                            Toast.makeText(MainActivity.this, "扫描成功", Toast.LENGTH_SHORT).show();
+                            // 文本、码制和引擎通过 Activity Result 带回，统一在结果面板中展示。
                         } else {
                             Toast.makeText(MainActivity.this, "扫描结果为空", Toast.LENGTH_SHORT).show();
                         }
@@ -285,9 +303,7 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onCancel() {
-                    runOnUiThread(() -> 
-                        Toast.makeText(MainActivity.this, "扫描已取消", Toast.LENGTH_SHORT).show()
-                    );
+                    // 返回即退出取景，不打断用户当前操作。
                 }
 
                 @Override
@@ -308,9 +324,65 @@ public class MainActivity extends AppCompatActivity {
             if (content != null) {
                 editTextUrl.setText(content);
             }
+        } else if (requestCode == 2 && resultCode == RESULT_OK && data != null) {
+            String content = data.getStringExtra("scan_text");
+            if (content != null) {
+                String format = data.getStringExtra("scan_format");
+                String engine = data.getStringExtra("scan_engine");
+                editTextUrl.setText(content);
+                dbHelper.addHistoryItem(content, "scan");
+                showScanResult(content, format, engine);
+            }
         } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
+    }
+
+    private void showScanResult(String content, String format, String engine) {
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog =
+                new com.google.android.material.bottomsheet.BottomSheetDialog(this, R.style.ThemeOverlay_ProScan_BottomSheet);
+        android.view.View view = getLayoutInflater().inflate(R.layout.bottom_sheet_scan_result, null);
+        dialog.setContentView(view);
+        ((TextView) view.findViewById(R.id.result_content)).setText(content);
+        ((TextView) view.findViewById(R.id.result_format)).setText(
+                format == null || format.isEmpty() ? getString(R.string.unknown_format) : format);
+        ((TextView) view.findViewById(R.id.result_engine)).setText(
+                engine == null || engine.isEmpty() ? barcodeScanner.getName() : engine);
+        Button primary = view.findViewById(R.id.button_primary_result);
+        final boolean webLink = content.matches("^https?://\\S+$");
+        primary.setText(webLink ? R.string.open_link : R.string.copy_content);
+        primary.setOnClickListener(v -> {
+            if (webLink) {
+                try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(content))); }
+                catch (Exception e) { Toast.makeText(this, "无法打开链接", Toast.LENGTH_SHORT).show(); }
+            } else {
+                copyToClipboard(content);
+                dialog.dismiss();
+            }
+        });
+        view.findViewById(R.id.button_copy_result).setOnClickListener(v -> {
+            copyToClipboard(content);
+            dialog.dismiss();
+        });
+        view.findViewById(R.id.button_done_result).setOnClickListener(v -> dialog.dismiss());
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(view, (v, insets) -> {
+            int bottom = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars()).bottom;
+            v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(),
+                    getResources().getDimensionPixelSize(R.dimen.space_20) + bottom);
+            return insets;
+        });
+        dialog.setOnShowListener(d -> {
+            android.view.Window window = dialog.getWindow();
+            if (window != null) androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false);
+            androidx.core.view.ViewCompat.requestApplyInsets(view);
+        });
+        dialog.show();
+    }
+
+    private void copyToClipboard(String content) {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        clipboard.setPrimaryClip(ClipData.newPlainText("扫描内容", content));
+        Toast.makeText(this, R.string.copied, Toast.LENGTH_SHORT).show();
     }
 
     private void generateBarcode() {

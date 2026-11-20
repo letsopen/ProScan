@@ -1,5 +1,34 @@
 <resources>
-    <!-- 将应用名称改为ProScan -->
     <string name="app_name">ProScan</string>
-    <!-- ... 其他字符串资源 ... -->
+    <string name="home_title">ProScan</string>
+    <string name="home_subtitle">扫描、生成，一切从容。</string>
+    <string name="home_input_label">内容</string>
+    <string name="home_input_hint">输入文本或链接，也可以直接扫描</string>
+    <string name="scan_action">扫描二维码或条码</string>
+    <string name="paste_action">粘贴</string>
+    <string name="visit_action">访问</string>
+    <string name="generate_barcode">生成条形码</string>
+    <string name="generate_qrcode">生成二维码</string>
+    <string name="history_title">历史记录</string>
+    <string name="history_empty">暂无历史记录</string>
+    <string name="close">关闭</string>
+    <string name="switch_engine">切换扫码引擎</string>
+    <string name="choose_engine">扫码引擎</string>
+    <string name="scan_hint">将条码置于取景框内</string>
+    <string name="scan_focus_hint">轻点画面可对焦与调整曝光</string>
+    <string name="gallery">从相册识别</string>
+    <string name="flash_on">打开手电筒</string>
+    <string name="flash_off">关闭手电筒</string>
+    <string name="scan_result">扫描结果</string>
+    <string name="unknown_format">条码</string>
+    <string name="open_link">打开链接</string>
+    <string name="copy_content">复制内容</string>
+    <string name="done">完成</string>
+    <string name="copied">已复制</string>
+    <string name="no_barcode_in_image">未在照片中识别到条码</string>
+    <string name="reading_photo">正在识别照片…</string>
+    <string name="engine_unavailable">当前设备不可用该方案</string>
+    <string name="engine_switched">已切换至 %1$s</string>
+    <string name="gallery_unavailable">无法读取照片</string>
+    <string name="scan_cancelled">扫描已取消</string>
 </resources>

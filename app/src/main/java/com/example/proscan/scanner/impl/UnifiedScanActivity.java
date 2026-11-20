@@ -2,39 +2,65 @@ package com.example.proscan.scanner.impl;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.ImageDecoder;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Vibrator;
+import android.view.HapticFeedbackConstants;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowInsetsController;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.PickVisualMediaRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.OptIn;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.Camera;
-import androidx.camera.core.resolutionselector.ResolutionSelector;
-import androidx.camera.core.resolutionselector.ResolutionStrategy;
+import androidx.camera.core.CameraControl;
+import androidx.camera.core.CameraInfo;
+import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
+import androidx.camera.core.TorchState;
+import androidx.camera.core.resolutionselector.ResolutionSelector;
+import androidx.camera.core.resolutionselector.ResolutionStrategy;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.ViewCompat;
 import androidx.lifecycle.LifecycleOwner;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.proscan.R;
 import com.example.proscan.scanner.BarcodeScanner;
+import com.example.proscan.scanner.BarcodeScannerFactory;
 import com.example.proscan.scanner.ScanCallbackHolder;
+import com.example.proscan.scanner.ScanResult;
+import com.example.proscan.scanner.decoder.FrameDecoder;
+import com.example.proscan.scanner.decoder.ZxingCppFrameDecoder;
 import com.example.proscan.view.ViewfinderView;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.barcode.BarcodeScanning;
 import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.common.InputImage;
+import com.huawei.hms.hmsscankit.ScanUtil;
 import com.huawei.hms.ml.scan.HmsScan;
 import com.huawei.hms.ml.scan.HmsScanAnalyzer;
 import com.huawei.hms.ml.scan.HmsScanAnalyzerOptions;
 import com.huawei.hms.mlsdk.common.MLFrame;
-import com.example.proscan.scanner.decoder.FrameDecoder;
-import com.example.proscan.scanner.decoder.ZxingCppFrameDecoder;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -44,76 +70,134 @@ import java.util.concurrent.Executors;
 
 public class UnifiedScanActivity extends AppCompatActivity {
     private static final String TAG = "UnifiedScanActivity";
-    /** 帧间一致性确认帧数：同一结果连续命中 2 帧才上报（抑制曲面边缘 1D 误读） */
     private static final int CONFIRM_HITS = 2;
-    /** 候选结果有效期（ms），超时重置 */
     private static final long CANDIDATE_TIMEOUT_MS = 800;
+    private static final String PREFS = "proscan_prefs";
+    private static final String KEY_SCANNER_TYPE = "scanner_type";
+
     private String lastCandidate;
+    private String lastCandidateFormat = FrameDecoder.FORMAT_UNKNOWN;
     private int candidateHits;
     private long lastCandidateAt;
+    private int decoderGeneration;
     private PreviewView previewView;
     private ViewfinderView viewfinderView;
     private ProcessCameraProvider cameraProvider;
     private ExecutorService cameraExecutor;
+    private ExecutorService photoExecutor;
     private BarcodeScanner.ScanCallback callback;
     private String decoder;
     private boolean active = true;
+    private boolean destroyed;
+    private boolean readingPhoto;
     private volatile boolean processing = false;
     private com.google.mlkit.vision.barcode.BarcodeScanner mlkitScanner;
     private FrameDecoder frameDecoder;
     private HmsScanAnalyzer hmsAnalyzer;
+    private Camera camera;
+    private CameraInfo cameraInfo;
+    private CameraControl cameraControl;
+    private ImageButton flashButton;
+    private TextView engineText;
+    private TextView statusText;
+    private View guidance;
+    private ActivityResultLauncher<PickVisualMediaRequest> photoPicker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        supportRequestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
-        getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        WindowInsetsController controller = getWindow().getInsetsController();
+        if (controller != null) {
+            controller.setSystemBarsAppearance(0,
+                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                            | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+        }
         setContentView(R.layout.activity_mlkit_scan);
         previewView = findViewById(R.id.preview_view);
         viewfinderView = findViewById(R.id.viewfinder_view);
+        flashButton = findViewById(R.id.button_flash);
+        engineText = findViewById(R.id.text_engine);
+        statusText = findViewById(R.id.status_text);
+        guidance = findViewById(R.id.scan_guidance);
         cameraExecutor = Executors.newSingleThreadExecutor();
+        photoExecutor = Executors.newSingleThreadExecutor();
         callback = ScanCallbackHolder.get();
         decoder = ScanCallbackHolder.getDecoder();
-        mlkitScanner = BarcodeScanning.getClient(
-                new com.google.mlkit.vision.barcode.BarcodeScannerOptions.Builder()
-                        .setBarcodeFormats(
-                                Barcode.FORMAT_QR_CODE,
-                                Barcode.FORMAT_AZTEC,
-                                Barcode.FORMAT_DATA_MATRIX,
-                                Barcode.FORMAT_PDF417,
-                                Barcode.FORMAT_CODE_128,
-                                Barcode.FORMAT_CODE_39,
-                                Barcode.FORMAT_CODE_93,
-                                Barcode.FORMAT_CODABAR,
-                                Barcode.FORMAT_EAN_13,
-                                Barcode.FORMAT_EAN_8,
-                                Barcode.FORMAT_ITF,
-                                Barcode.FORMAT_UPC_A,
-                                Barcode.FORMAT_UPC_E
-                        ).build()
-        );
-        // 按当前引擎创建帧解码器
-        if ("ZXING_CPP".equals(decoder)) {
-            frameDecoder = new ZxingCppFrameDecoder();
-        } else if ("HUAWEI_SCAN_KIT".equals(decoder)) {
-            // 增强 AI 分析器：实时流模式（photoMode=false），针对曲面/反光/污损优化
-            hmsAnalyzer = new HmsScanAnalyzer(
-                    new HmsScanAnalyzerOptions.Creator()
-                            .setHmsScanTypes(HmsScan.ALL_SCAN_TYPE)
-                            .setPhotoMode(false)
-                            .setParseResult(true)
-                            .create());
-        }
+        if (decoder == null) decoder = BarcodeScannerFactory.ScannerType.ML_KIT_STANDALONE.name();
+        createDecoder();
+        setupInsets();
+        setupControls();
+        setupPhotoPicker();
+        findViewById(R.id.button_gallery).setOnClickListener(v -> {
+            if (!readingPhoto) {
+                photoPicker.launch(new PickVisualMediaRequest.Builder()
+                        .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE).build());
+            }
+        });
+        positionGuidance();
+        updateEngineLabel(false);
         startCamera();
     }
 
+    private void setupInsets() {
+        View top = findViewById(R.id.top_controls);
+        View bottom = findViewById(R.id.bottom_controls);
+        int topPadding = top.getPaddingTop();
+        int bottomPadding = bottom.getPaddingBottom();
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.scan_root), (v, insets) -> {
+            androidx.core.graphics.Insets bars = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            top.setPadding(top.getPaddingLeft(), topPadding + bars.top,
+                    top.getPaddingRight(), top.getPaddingBottom());
+            bottom.setPadding(bottom.getPaddingLeft(), bottom.getPaddingTop(),
+                    bottom.getPaddingRight(), bottomPadding + bars.bottom);
+            statusText.setTranslationY(-bars.bottom);
+            positionGuidance();
+            return WindowInsetsCompat.CONSUMED;
+        });
+    }
+
+    private void setupControls() {
+        findViewById(R.id.button_close).setOnClickListener(v -> cancelScan());
+        findViewById(R.id.button_engine).setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            showEngineOptions();
+        });
+        flashButton.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            if (cameraInfo != null && cameraInfo.getTorchState().getValue() != null) {
+                boolean on = cameraInfo.getTorchState().getValue() == TorchState.ON;
+                cameraControl.enableTorch(!on);
+            }
+        });
+    }
+
+    private void setupPhotoPicker() {
+        photoPicker = registerForActivityResult(
+                new ActivityResultContracts.PickVisualMedia(), this::decodePhoto);
+    }
+
+    private void positionGuidance() {
+        if (guidance == null || viewfinderView == null) return;
+        viewfinderView.post(() -> {
+            if (destroyed) return;
+            Rect frame = new Rect();
+            android.graphics.RectF rect = viewfinderView.getFrameRect();
+            frame.set(Math.round(rect.left), Math.round(rect.top),
+                    Math.round(rect.right), Math.round(rect.bottom));
+            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) guidance.getLayoutParams();
+            params.topMargin = frame.bottom + Math.round(20 * getResources().getDisplayMetrics().density);
+            guidance.setX((previewView.getWidth() - guidance.getWidth()) / 2f);
+            guidance.setLayoutParams(params);
+        });
+    }
+
     private void startCamera() {
-        ListenableFuture<ProcessCameraProvider> f = ProcessCameraProvider.getInstance(this);
-        f.addListener(() -> {
+        ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(this);
+        future.addListener(() -> {
             try {
-                ProcessCameraProvider provider = f.get();
-                bind(provider);
+                bind(future.get());
             } catch (ExecutionException | InterruptedException e) {
                 if (callback != null) callback.onError("相机初始化失败: " + e.getMessage());
                 finish();
@@ -121,56 +205,62 @@ public class UnifiedScanActivity extends AppCompatActivity {
         }, ContextCompat.getMainExecutor(this));
     }
 
+    private ResolutionSelector cameraResolution() {
+        return new ResolutionSelector.Builder()
+                .setResolutionStrategy(new ResolutionStrategy(
+                        new android.util.Size(1280, 720),
+                        ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER))
+                .build();
+    }
+
     private void bind(ProcessCameraProvider provider) {
         this.cameraProvider = provider;
-        Preview preview = new Preview.Builder()
-                // 分辨率锁定 1280x720：4K 会放大金属反光噪点且降低帧率，
-                // 低于 720p 则 1D 条码条纹分辨率不足
-                .setResolutionSelector(new ResolutionSelector.Builder()
-                        .setResolutionStrategy(new ResolutionStrategy(
-                                new android.util.Size(1280, 720),
-                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER))
-                        .build())
-                .build();
+        Preview preview = new Preview.Builder().setResolutionSelector(cameraResolution()).build();
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
         ImageAnalysis analysis = new ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setResolutionSelector(new ResolutionSelector.Builder()
-                        .setResolutionStrategy(new ResolutionStrategy(
-                                new android.util.Size(1280, 720),
-                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER))
-                        .build())
+                .setResolutionSelector(cameraResolution())
                 .build();
         analysis.setAnalyzer(cameraExecutor, this::analyze);
         try {
             provider.unbindAll();
-            Camera camera = provider.bindToLifecycle((LifecycleOwner) this,
-                    androidx.camera.core.CameraSelector.DEFAULT_BACK_CAMERA,
+            camera = provider.bindToLifecycle(this, androidx.camera.core.CameraSelector.DEFAULT_BACK_CAMERA,
                     preview, analysis);
-            setupTapToFocus(camera.getCameraControl());
+            cameraControl = camera.getCameraControl();
+            cameraInfo = camera.getCameraInfo();
+            setupTapToFocus(cameraControl);
+            setupTorch();
         } catch (Exception e) {
             if (callback != null) callback.onError("相机绑定失败: " + e.getMessage());
             finish();
         }
     }
 
-    /**
-     * 点击对焦/测光：金属饮料罐极易局部过曝（反光处死白），
-     * 用户点击条码位置触发局部测光压低曝光，3 秒后自动恢复连续对焦
-     */
-    private void setupTapToFocus(androidx.camera.core.CameraControl cameraControl) {
-        if (viewfinderView == null || previewView == null) return;
+    private void setupTorch() {
+        if (!cameraInfo.hasFlashUnit()) {
+            flashButton.setVisibility(View.GONE);
+            return;
+        }
+        cameraInfo.getTorchState().observe(this, state -> {
+            boolean on = state == TorchState.ON;
+            flashButton.setImageResource(on ? R.drawable.ic_flash_on : R.drawable.ic_flash_off);
+            flashButton.setBackgroundResource(on ? R.drawable.bg_camera_control_active : R.drawable.bg_camera_control);
+            flashButton.setImageTintList(ContextCompat.getColorStateList(this,
+                    on ? R.color.text_primary : R.color.white));
+            flashButton.setContentDescription(getString(on ? R.string.flash_off : R.string.flash_on));
+        });
+    }
+
+    private void setupTapToFocus(CameraControl cameraControl) {
         viewfinderView.setOnTouchListener((v, event) -> {
             if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
-                androidx.camera.core.MeteringPointFactory factory = previewView.getMeteringPointFactory();
-                androidx.camera.core.MeteringPoint point =
-                        factory.createPoint(event.getX(), event.getY());
+                androidx.camera.core.MeteringPoint point = previewView.getMeteringPointFactory()
+                        .createPoint(event.getX(), event.getY());
                 androidx.camera.core.FocusMeteringAction action =
-                        new androidx.camera.core.FocusMeteringAction.Builder(
-                                point, androidx.camera.core.FocusMeteringAction.FLAG_AF
+                        new androidx.camera.core.FocusMeteringAction.Builder(point,
+                                androidx.camera.core.FocusMeteringAction.FLAG_AF
                                         | androidx.camera.core.FocusMeteringAction.FLAG_AE)
-                                .setAutoCancelDuration(3, java.util.concurrent.TimeUnit.SECONDS)
-                                .build();
+                                .setAutoCancelDuration(3, java.util.concurrent.TimeUnit.SECONDS).build();
                 cameraControl.startFocusAndMetering(action);
                 v.performClick();
                 return true;
@@ -180,58 +270,50 @@ public class UnifiedScanActivity extends AppCompatActivity {
     }
 
     private void analyze(@NonNull ImageProxy image) {
-        if (!active) { image.close(); return; }
+        if (!active || readingPhoto) { image.close(); return; }
         if (processing) { image.close(); return; }
         processing = true;
+        int generation = decoderGeneration;
         if ("ML_KIT_STANDALONE".equals(decoder)) {
-            processMlkit(image);
+            processMlkit(image, generation);
         } else if ("HUAWEI_SCAN_KIT".equals(decoder)) {
-            processHuaweiFrame(image);
+            processHuaweiFrame(image, generation);
         } else if ("ZXING_CPP".equals(decoder)) {
-            processWithFrameDecoder(image);
+            processWithFrameDecoder(image, generation);
         } else {
-            processMlkit(image);
+            processMlkit(image, generation);
         }
     }
 
-    /** ZXing-CPP：FrameDecoder 内部负责 close(image) 与 processing 复位 */
-    private void processWithFrameDecoder(ImageProxy image) {
+    private void processWithFrameDecoder(ImageProxy image, int generation) {
         try {
-            String result = frameDecoder.decode(image);
-            if (result != null && active) {
-                onDecodeCandidate(result);
+            String[] result = frameDecoder.decodeDetailed(image);
+            if (result != null && active && generation == decoderGeneration) {
+                onDecodeCandidate(result[0], result[1], generation);
                 return;
             }
-        } catch (Throwable t) {
-            // 吞帧继续
-        }
+        } catch (Throwable ignored) { }
         processing = false;
     }
 
-    /**
-     * 帧间一致性确认：同一解码文本连续命中 CONFIRM_HITS 帧才真正上报。
-     * <p>
-     * 目的：抑制曲面/反光边缘的 1D 条码误读（如 6↔8），此类误读结果在相邻帧
-     * 几乎不可能原样复现，而真码每帧稳定输出。EAN-13/UPC-A 虽有校验位，
-     * 但两位同时出错且校验和恰好抵消时仍可能漏过，帧间校验可兜住。
-     */
-    private void onDecodeCandidate(String value) {
+    private void onDecodeCandidate(String value, String format, int generation) {
+        if (generation != decoderGeneration || !active) {
+            processing = false;
+            return;
+        }
         long now = android.os.SystemClock.elapsedRealtime();
-        if (value.equals(lastCandidate)) {
+        if (value.equals(lastCandidate) && now - lastCandidateAt <= CANDIDATE_TIMEOUT_MS) {
             candidateHits++;
         } else {
-            lastCandidate = value;
             candidateHits = 1;
-            lastCandidateAt = now;
         }
-        // 超过 800ms 未再次命中则重置（对焦切换/画面变化后旧候选不再有效）
-        if (now - lastCandidateAt > 800) {
-            candidateHits = 1;
-            lastCandidateAt = now;
-        }
+        lastCandidate = value;
+        lastCandidateFormat = format == null ? FrameDecoder.FORMAT_UNKNOWN : format;
+        lastCandidateAt = now;
         if (candidateHits >= CONFIRM_HITS) {
+            ScanResult result = new ScanResult(value, lastCandidateFormat, currentEngineLabel());
             resetCandidate();
-            emitSuccess(value);
+            emitSuccess(result);
         } else {
             processing = false;
         }
@@ -242,83 +324,55 @@ public class UnifiedScanActivity extends AppCompatActivity {
         candidateHits = 0;
     }
 
-    private void processMlkit(ImageProxy image) {
-        InputImage inputImage = InputImage.fromMediaImage(
-                image.getImage(),
-                image.getImageInfo().getRotationDegrees()
-        );
-        mlkitScanner.process(inputImage)
-                .addOnSuccessListener(barcodes -> {
-                    if (!barcodes.isEmpty() && active) {
-                        String value = barcodes.get(0).getRawValue();
-                        if (value != null) onDecodeCandidate(value);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    // ignore
-                })
-                .addOnCompleteListener(task -> {
-                    processing = false;
-                    image.close();
-                });
+    @OptIn(markerClass = androidx.camera.core.ExperimentalGetImage.class)
+    private void processMlkit(ImageProxy image, int generation) {
+        InputImage inputImage = InputImage.fromMediaImage(image.getImage(),
+                image.getImageInfo().getRotationDegrees());
+        mlkitScanner.process(inputImage).addOnSuccessListener(barcodes -> {
+            if (!barcodes.isEmpty() && active && generation == decoderGeneration) {
+                Barcode barcode = barcodes.get(0);
+                String value = barcode.getRawValue();
+                if (value != null) onDecodeCandidate(value, mlKitFormat(barcode.getFormat()), generation);
+            }
+        }).addOnFailureListener(e -> { }).addOnCompleteListener(task -> {
+            processing = false;
+            image.close();
+        });
     }
 
-    private void emitSuccess(String value) {
-        active = false;
-        Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        if (vibrator != null && vibrator.hasVibrator()) vibrator.vibrate(300);
-        if (callback != null) callback.onSuccess(value);
-        runOnUiThread(this::finish);
-    }
-
-    /**
-     * 华为 HMS：优先走 HmsScanAnalyzer + NV21 字节流（scanplus 增强 AI，YUV 直读）。
-     * 远程解码链路不可用（HMS 服务未就绪/IPC 失败）或连续多帧无果时，
-     * 自动回退到 ScanUtil.decodeWithBitmap(Bitmap) 保底路径（该路径已在旧版本验证可用）。
-     */
-    private void processHuaweiFrame(ImageProxy image) {
+    private void processHuaweiFrame(ImageProxy image, int generation) {
         boolean handled = false;
         try {
             if (image.getFormat() == ImageFormat.YUV_420_888 && image.getPlanes().length >= 3) {
                 byte[] nv21 = yuv420ToNv21(image);
-                int rotation = image.getImageInfo().getRotationDegrees();
-                // MLFrame 相机流入口：writeByteBufferData(buf, width, height, format)
-                // （参数顺序已按 aar 反编译确认：第 4 参为 formatType，仅接受 NV21/NV16/YUY2）
-                MLFrame frame = new MLFrame.Creator()
-                        .writeByteBufferData(ByteBuffer.wrap(nv21),
-                                image.getWidth(), image.getHeight(), ImageFormat.NV21)
-                        .setQuadrant(rotation / 90)
-                        .create();
+                MLFrame frame = new MLFrame.Creator().writeByteBufferData(ByteBuffer.wrap(nv21),
+                        image.getWidth(), image.getHeight(), ImageFormat.NV21)
+                        .setQuadrant(image.getImageInfo().getRotationDegrees() / 90).create();
                 android.util.SparseArray<HmsScan> scans = hmsAnalyzer.analyseFrame(frame);
-                if (scans != null && scans.size() > 0 && active) {
-                    String value = scans.valueAt(0).getOriginalValue();
+                if (scans != null && scans.size() > 0 && active && generation == decoderGeneration) {
+                    HmsScan scan = scans.valueAt(0);
+                    String value = scan.getOriginalValue();
                     if (value != null) {
                         handled = true;
-                        onDecodeCandidate(value);
+                        onDecodeCandidate(value, hmsFormat(scan.getScanTypeForm()), generation);
                     }
                 }
             }
         } catch (Throwable t) {
             android.util.Log.w(TAG, "HMS analyzer frame failed: " + t);
         }
-
-        // 回退路径：HmsScanAnalyzer 持续无结果（可能远程解码服务不可用）时，
-        // 用已验证可用的 Bitmap 静态解码路径保底
-        if (!handled && active) {
+        if (!handled && active && generation == decoderGeneration) {
             try {
                 Bitmap bitmap = toBitmap(image);
                 if (bitmap != null) {
-                    HmsScanAnalyzerOptions options = new HmsScanAnalyzerOptions.Creator()
-                            .setHmsScanTypes(HmsScan.ALL_SCAN_TYPE)
-                            .setPhotoMode(false)
-                            .setParseResult(true)
-                            .create();
-                    HmsScan[] scans = com.huawei.hms.hmsscankit.ScanUtil
-                            .decodeWithBitmap(getApplicationContext(), bitmap, options);
-                    if (scans != null && scans.length > 0 && active) {
-                        String value = scans[0].getOriginalValue();
-                        if (value != null) onDecodeCandidate(value);
+                    HmsScan[] scans = ScanUtil.decodeWithBitmap(getApplicationContext(), bitmap,
+                            new HmsScanAnalyzerOptions.Creator().setHmsScanTypes(HmsScan.ALL_SCAN_TYPE)
+                                    .setPhotoMode(false).setParseResult(true).create());
+                    if (scans != null && scans.length > 0 && active && generation == decoderGeneration) {
+                        onDecodeCandidate(scans[0].getOriginalValue(),
+                                hmsFormat(scans[0].getScanTypeForm()), generation);
                     }
+                    bitmap.recycle();
                 }
             } catch (Throwable t) {
                 android.util.Log.w(TAG, "HMS bitmap fallback failed: " + t);
@@ -328,7 +382,254 @@ public class UnifiedScanActivity extends AppCompatActivity {
         image.close();
     }
 
-    /** YUV_420_888 -> JPEG -> Bitmap（华为回退路径用，保证旋转后方向正确） */
+    private void createDecoder() {
+        if ("ZXING_CPP".equals(decoder)) {
+            frameDecoder = new ZxingCppFrameDecoder();
+        } else if ("HUAWEI_SCAN_KIT".equals(decoder)) {
+            hmsAnalyzer = new HmsScanAnalyzer(new HmsScanAnalyzerOptions.Creator()
+                    .setHmsScanTypes(HmsScan.ALL_SCAN_TYPE).setPhotoMode(false).setParseResult(true).create());
+        } else {
+            mlkitScanner = BarcodeScanning.getClient(new com.google.mlkit.vision.barcode.BarcodeScannerOptions.Builder()
+                    .setBarcodeFormats(Barcode.FORMAT_QR_CODE, Barcode.FORMAT_AZTEC,
+                            Barcode.FORMAT_DATA_MATRIX, Barcode.FORMAT_PDF417, Barcode.FORMAT_CODE_128,
+                            Barcode.FORMAT_CODE_39, Barcode.FORMAT_CODE_93, Barcode.FORMAT_CODABAR,
+                            Barcode.FORMAT_EAN_13, Barcode.FORMAT_EAN_8, Barcode.FORMAT_ITF,
+                            Barcode.FORMAT_UPC_A, Barcode.FORMAT_UPC_E).build());
+        }
+    }
+
+    private void releaseDecoders() {
+        if (mlkitScanner != null) { try { mlkitScanner.close(); } catch (Exception ignored) {} mlkitScanner = null; }
+        if (frameDecoder != null) { frameDecoder.close(); frameDecoder = null; }
+        if (hmsAnalyzer != null) { try { hmsAnalyzer.destory(); } catch (Throwable ignored) {} hmsAnalyzer = null; }
+    }
+
+    private void switchEngine(BarcodeScannerFactory.ScannerType type) {
+        if (type.name().equals(decoder) || readingPhoto) return;
+        active = false;
+        decoderGeneration++;
+        int generation = decoderGeneration;
+        cameraExecutor.execute(() -> {
+            releaseDecoders();
+            runOnUiThread(() -> {
+                if (destroyed || generation != decoderGeneration) return;
+                decoder = type.name();
+                ScanCallbackHolder.setDecoder(decoder);
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY_SCANNER_TYPE, decoder).apply();
+                createDecoder();
+                resetCandidate();
+                processing = false;
+                readingPhoto = false;
+                active = true;
+                updateEngineLabel(true);
+                statusText.setVisibility(View.GONE);
+            });
+        });
+    }
+
+    private String currentEngineLabel() {
+        try {
+            return BarcodeScannerFactory.ScannerType.valueOf(decoder).getLabel();
+        } catch (Exception ignored) {
+            return BarcodeScannerFactory.ScannerType.ML_KIT_STANDALONE.getLabel();
+        }
+    }
+
+    private void updateEngineLabel(boolean animate) {
+        String label = currentEngineLabel();
+        if (!animate) { engineText.setText(label); return; }
+        engineText.animate().alpha(0f).translationY(-4f).setDuration(100).withEndAction(() -> {
+            engineText.setText(label);
+            engineText.setTranslationY(4f);
+            engineText.animate().alpha(1f).translationY(0f).setDuration(140).start();
+        }).start();
+    }
+
+    private void showEngineOptions() {
+        if (readingPhoto || successEmitted) return;
+        active = false;
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View content = getLayoutInflater().inflate(R.layout.bottom_sheet_scanner_options, null);
+        dialog.setContentView(content);
+        RecyclerView list = content.findViewById(R.id.scanner_options);
+        list.setLayoutManager(new LinearLayoutManager(this));
+        list.setAdapter(new ScannerOptionsAdapter(type -> {
+            BarcodeScanner scanner = BarcodeScannerFactory.createScanner(type);
+            if (!scanner.isAvailable(this)) {
+                Toast.makeText(this, R.string.engine_unavailable, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            switchEngine(type);
+            dialog.dismiss();
+        }));
+        dialog.setOnDismissListener(d -> {
+            if (!destroyed && !readingPhoto && !isFinishing()) active = true;
+        });
+        applyBottomInsets(dialog, content, true);
+        dialog.show();
+    }
+
+    private class ScannerOptionsAdapter extends RecyclerView.Adapter<ScannerOptionsAdapter.Holder> {
+        private final BarcodeScannerFactory.ScannerType[] values = BarcodeScannerFactory.ScannerType.values();
+        private final java.util.function.Consumer<BarcodeScannerFactory.ScannerType> onSelect;
+        ScannerOptionsAdapter(java.util.function.Consumer<BarcodeScannerFactory.ScannerType> onSelect) {
+            this.onSelect = onSelect;
+        }
+        @NonNull @Override public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            return new Holder(getLayoutInflater().inflate(R.layout.item_scanner_option, parent, false));
+        }
+        @Override public void onBindViewHolder(@NonNull Holder holder, int position) {
+            BarcodeScannerFactory.ScannerType type = values[position];
+            BarcodeScanner scanner = BarcodeScannerFactory.createScanner(type);
+            boolean available = scanner.isAvailable(UnifiedScanActivity.this);
+            boolean selected = type.name().equals(decoder);
+            holder.name.setText(type.getLabel());
+            holder.name.setAlpha(available ? 1f : 0.45f);
+            holder.status.setText(selected ? "当前使用" : available ? "可用" : "此设备不可用");
+            holder.check.setVisibility(selected ? View.VISIBLE : View.INVISIBLE);
+            holder.itemView.setEnabled(available);
+            holder.itemView.setAlpha(available ? 1f : 0.55f);
+            holder.itemView.setOnClickListener(v -> onSelect.accept(type));
+        }
+        @Override public int getItemCount() { return values.length; }
+        class Holder extends RecyclerView.ViewHolder {
+            final TextView name = itemView.findViewById(R.id.option_name);
+            final TextView status = itemView.findViewById(R.id.option_status);
+            final android.widget.ImageView check = itemView.findViewById(R.id.option_check);
+            Holder(View view) { super(view); }
+        }
+    }
+
+    private void decodePhoto(Uri uri) {
+        if (uri == null || readingPhoto || destroyed) return;
+        readingPhoto = true;
+        active = false;
+        showStatus(getString(R.string.reading_photo));
+        String selectedDecoder = decoder;
+        photoExecutor.execute(() -> {
+            Bitmap bitmap = null;
+            String[] result = null;
+            int orientation = readExifRotation(uri);
+            try {
+                ImageDecoder.Source source = ImageDecoder.createSource(getContentResolver(), uri);
+                bitmap = ImageDecoder.decodeBitmap(source, (decoder, info, src) -> {
+                    decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
+                    int max = Math.max(info.getSize().getWidth(), info.getSize().getHeight());
+                    if (max > 2048) decoder.setTargetSampleSize(Math.max(1, Integer.highestOneBit(max / 2048)));
+                });
+                if (orientation != 0) {
+                    android.graphics.Matrix matrix = new android.graphics.Matrix();
+                    matrix.postRotate(orientation);
+                    Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                    if (rotated != bitmap) bitmap.recycle();
+                    bitmap = rotated;
+                }
+                result = decodeBitmap(selectedDecoder, bitmap);
+            } catch (Throwable t) {
+                android.util.Log.w(TAG, "Gallery decode failed: " + t);
+            } finally {
+                if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
+            }
+            String[] finalResult = result;
+            runOnUiThread(() -> {
+                if (destroyed) return;
+                readingPhoto = false;
+                if (finalResult != null && active == false) {
+                    ScanResult scanResult = new ScanResult(finalResult[0], finalResult[1], currentEngineLabel());
+                    emitSuccess(scanResult);
+                } else {
+                    active = true;
+                    showStatus(getString(R.string.no_barcode_in_image));
+                    statusText.postDelayed(() -> {
+                        if (!destroyed && !readingPhoto) statusText.setVisibility(View.GONE);
+                    }, 2600);
+                }
+            });
+        });
+    }
+
+    private int readExifRotation(Uri uri) {
+        try (java.io.InputStream stream = getContentResolver().openInputStream(uri)) {
+            androidx.exifinterface.media.ExifInterface exif = new androidx.exifinterface.media.ExifInterface(stream);
+            int orientation = exif.getAttributeInt(androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION,
+                    androidx.exifinterface.media.ExifInterface.ORIENTATION_NORMAL);
+            if (orientation == androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_90) return 90;
+            if (orientation == androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_180) return 180;
+            if (orientation == androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_270) return 270;
+        } catch (Exception e) {
+            android.util.Log.w(TAG, "EXIF unavailable: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    private String[] decodeBitmap(String selectedDecoder, Bitmap bitmap) {
+        if ("ML_KIT_STANDALONE".equals(selectedDecoder)) {
+            com.google.mlkit.vision.barcode.BarcodeScanner scanner = BarcodeScanning.getClient();
+            try {
+                java.util.List<Barcode> results = com.google.android.gms.tasks.Tasks.await(
+                        scanner.process(InputImage.fromBitmap(bitmap, 0)));
+                if (!results.isEmpty()) return new String[]{results.get(0).getRawValue(),
+                        mlKitFormat(results.get(0).getFormat())};
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            } finally { scanner.close(); }
+        } else if ("ZXING_CPP".equals(selectedDecoder)) {
+            ZxingCppFrameDecoder decoder = new ZxingCppFrameDecoder();
+            try { return decoder.decodeBitmapDetailed(bitmap); } finally { decoder.close(); }
+        } else {
+            HmsScan[] scans = ScanUtil.decodeWithBitmap(getApplicationContext(), bitmap,
+                    new HmsScanAnalyzerOptions.Creator().setHmsScanTypes(HmsScan.ALL_SCAN_TYPE)
+                            .setPhotoMode(true).setParseResult(true).create());
+            if (scans != null && scans.length > 0) return new String[]{scans[0].getOriginalValue(),
+                    hmsFormat(scans[0].getScanTypeForm())};
+        }
+        return null;
+    }
+
+    private void showStatus(String message) {
+        statusText.setText(message);
+        statusText.setVisibility(View.VISIBLE);
+    }
+
+    private boolean successEmitted;
+
+    private void emitSuccess(ScanResult result) {
+        if (destroyed || successEmitted) return;
+        successEmitted = true;
+        active = false;
+        Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        if (vibrator != null && vibrator.hasVibrator()) vibrator.vibrate(60);
+        if (callback != null) callback.onSuccess(result.getText());
+        android.content.Intent data = new android.content.Intent();
+        data.putExtra("scan_text", result.getText());
+        data.putExtra("scan_format", result.getFormat());
+        data.putExtra("scan_engine", result.getEngine());
+        setResult(RESULT_OK, data);
+        runOnUiThread(this::finish);
+    }
+
+    private void cancelScan() {
+        active = false;
+        if (callback != null) callback.onCancel();
+        finish();
+    }
+
+    @Override public void onBackPressed() { cancelScan(); }
+
+    private void applyBottomInsets(BottomSheetDialog dialog, View content, boolean dark) {
+        ViewCompat.setOnApplyWindowInsetsListener(content, (v, insets) -> {
+            int bottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+            v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(),
+                    Math.round(24 * getResources().getDisplayMetrics().density) + bottom);
+            return insets;
+        });
+        dialog.setOnShowListener(d -> {
+            android.view.Window window = dialog.getWindow();
+            if (window != null) WindowCompat.setDecorFitsSystemWindows(window, false);
+            ViewCompat.requestApplyInsets(content);
+        });
+    }
+
     private Bitmap toBitmap(ImageProxy image) {
         try {
             if (image.getFormat() != ImageFormat.YUV_420_888 || image.getPlanes().length < 3) return null;
@@ -338,77 +639,93 @@ public class UnifiedScanActivity extends AppCompatActivity {
             yuvImage.compressToJpeg(new Rect(0, 0, image.getWidth(), image.getHeight()), 90, out);
             byte[] jpegBytes = out.toByteArray();
             Bitmap bitmap = android.graphics.BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.length);
-            // 按相机旋转角摆正，否则竖屏时 HMS 看到的条码是横躺的
             int rotation = image.getImageInfo().getRotationDegrees();
             if (rotation != 0) {
-                android.graphics.Matrix m = new android.graphics.Matrix();
-                m.postRotate(rotation);
-                Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0,
-                        bitmap.getWidth(), bitmap.getHeight(), m, true);
+                android.graphics.Matrix matrix = new android.graphics.Matrix();
+                matrix.postRotate(rotation);
+                Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
                 if (rotated != bitmap) bitmap.recycle();
                 bitmap = rotated;
             }
             return bitmap;
-        } catch (Exception e) {
-            return null;
-        }
+        } catch (Exception e) { return null; }
     }
 
     private byte[] yuv420ToNv21(ImageProxy image) {
         ImageProxy.PlaneProxy[] planes = image.getPlanes();
-        int width = image.getWidth();
-        int height = image.getHeight();
+        int width = image.getWidth(), height = image.getHeight();
         byte[] nv21 = new byte[width * height * 3 / 2];
         int pos = 0;
-        ImageProxy.PlaneProxy yPlane = planes[0];
-        ImageProxy.PlaneProxy uPlane = planes[1];
-        ImageProxy.PlaneProxy vPlane = planes[2];
-        int rowStrideY = yPlane.getRowStride();
-        int pixelStrideY = yPlane.getPixelStride();
+        ImageProxy.PlaneProxy yPlane = planes[0], uPlane = planes[1], vPlane = planes[2];
+        int rowStrideY = yPlane.getRowStride(), pixelStrideY = yPlane.getPixelStride();
         byte[] yBuffer = new byte[yPlane.getBuffer().remaining()];
         yPlane.getBuffer().get(yBuffer);
         for (int row = 0; row < height; row++) {
             int offset = row * rowStrideY;
-            for (int col = 0; col < width; col++) {
-                nv21[pos++] = yBuffer[offset + col * pixelStrideY];
-            }
+            for (int col = 0; col < width; col++) nv21[pos++] = yBuffer[offset + col * pixelStrideY];
         }
-        int rowStrideU = uPlane.getRowStride();
-        int pixelStrideU = uPlane.getPixelStride();
-        int rowStrideV = vPlane.getRowStride();
-        int pixelStrideV = vPlane.getPixelStride();
-        byte[] uBuffer = new byte[uPlane.getBuffer().remaining()];
-        byte[] vBuffer = new byte[vPlane.getBuffer().remaining()];
-        uPlane.getBuffer().get(uBuffer);
-        vPlane.getBuffer().get(vBuffer);
+        int rowStrideU = uPlane.getRowStride(), pixelStrideU = uPlane.getPixelStride();
+        int rowStrideV = vPlane.getRowStride(), pixelStrideV = vPlane.getPixelStride();
+        byte[] uBuffer = new byte[uPlane.getBuffer().remaining()], vBuffer = new byte[vPlane.getBuffer().remaining()];
+        uPlane.getBuffer().get(uBuffer); vPlane.getBuffer().get(vBuffer);
         for (int row = 0; row < height / 2; row++) {
-            int uRowOffset = row * rowStrideU;
-            int vRowOffset = row * rowStrideV;
+            int uRowOffset = row * rowStrideU, vRowOffset = row * rowStrideV;
             for (int col = 0; col < width / 2; col++) {
-                int uIndex = uRowOffset + col * pixelStrideU;
-                int vIndex = vRowOffset + col * pixelStrideV;
-                nv21[pos++] = vBuffer[vIndex];
-                nv21[pos++] = uBuffer[uIndex];
+                nv21[pos++] = vBuffer[vRowOffset + col * pixelStrideV];
+                nv21[pos++] = uBuffer[uRowOffset + col * pixelStrideU];
             }
         }
         return nv21;
     }
-    
+
+    private String mlKitFormat(int format) {
+        switch (format) {
+            case Barcode.FORMAT_QR_CODE: return "QR Code";
+            case Barcode.FORMAT_AZTEC: return "Aztec";
+            case Barcode.FORMAT_DATA_MATRIX: return "Data Matrix";
+            case Barcode.FORMAT_PDF417: return "PDF417";
+            case Barcode.FORMAT_CODE_128: return "Code 128";
+            case Barcode.FORMAT_CODE_39: return "Code 39";
+            case Barcode.FORMAT_CODE_93: return "Code 93";
+            case Barcode.FORMAT_CODABAR: return "Codabar";
+            case Barcode.FORMAT_EAN_13: return "EAN-13";
+            case Barcode.FORMAT_EAN_8: return "EAN-8";
+            case Barcode.FORMAT_ITF: return "ITF";
+            case Barcode.FORMAT_UPC_A: return "UPC-A";
+            case Barcode.FORMAT_UPC_E: return "UPC-E";
+            default: return FrameDecoder.FORMAT_UNKNOWN;
+        }
+    }
+
+    private String hmsFormat(int format) {
+        if (format == HmsScan.QRCODE_SCAN_TYPE) return "QR Code";
+        if (format == HmsScan.AZTEC_SCAN_TYPE) return "Aztec";
+        if (format == HmsScan.DATAMATRIX_SCAN_TYPE) return "Data Matrix";
+        if (format == HmsScan.PDF417_SCAN_TYPE) return "PDF417";
+        if (format == HmsScan.CODE39_SCAN_TYPE) return "Code 39";
+        if (format == HmsScan.CODE93_SCAN_TYPE) return "Code 93";
+        if (format == HmsScan.CODE128_SCAN_TYPE) return "Code 128";
+        if (format == HmsScan.EAN13_SCAN_TYPE) return "EAN-13";
+        if (format == HmsScan.EAN8_SCAN_TYPE) return "EAN-8";
+        if (format == HmsScan.ITF14_SCAN_TYPE) return "ITF-14";
+        if (format == HmsScan.UPCCODE_A_SCAN_TYPE) return "UPC-A";
+        if (format == HmsScan.UPCCODE_E_SCAN_TYPE) return "UPC-E";
+        if (format == HmsScan.CODABAR_SCAN_TYPE) return "Codabar";
+        return FrameDecoder.FORMAT_UNKNOWN;
+    }
+
     @Override
     protected void onDestroy() {
-        if (cameraExecutor != null) cameraExecutor.shutdown();
+        destroyed = true;
+        active = false;
+        if (cameraControl != null) cameraControl.enableTorch(false);
+        if (cameraExecutor != null) {
+            // 避免分析线程仍在使用解码器时由主线程提前释放。
+            try { cameraExecutor.execute(this::releaseDecoders); } catch (java.util.concurrent.RejectedExecutionException ignored) {}
+            cameraExecutor.shutdown();
+        }
+        if (photoExecutor != null) photoExecutor.shutdown();
         if (cameraProvider != null) cameraProvider.unbindAll();
-        if (mlkitScanner != null) {
-            try { mlkitScanner.close(); } catch (Exception ignored) {}
-        }
-        if (frameDecoder != null) {
-            frameDecoder.close();
-            frameDecoder = null;
-        }
-        if (hmsAnalyzer != null) {
-            try { hmsAnalyzer.destory(); } catch (Throwable ignored) {}
-            hmsAnalyzer = null;
-        }
         if (isFinishing()) ScanCallbackHolder.clear();
         super.onDestroy();
     }

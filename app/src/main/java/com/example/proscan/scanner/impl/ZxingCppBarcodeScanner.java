@@ -16,12 +16,12 @@ public class ZxingCppBarcodeScanner implements BarcodeScanner {
     public void startScan(Activity activity, ScanCallback callback) {
         ScanCallbackHolder.set(callback, "ZXING_CPP");
         Intent intent = new Intent(activity, UnifiedScanActivity.class);
-        activity.startActivity(intent);
+        activity.startActivityForResult(intent, 2);
     }
 
     @Override
     public String getName() {
-        return "ZXing-CPP";
+        return "ZXING-CPP";
     }
 
     @Override

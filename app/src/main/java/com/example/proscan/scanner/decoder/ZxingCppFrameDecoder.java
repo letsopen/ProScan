@@ -67,15 +67,17 @@ public class ZxingCppFrameDecoder implements FrameDecoder {
     }
 
     @Override
-    public String decode(ImageProxy frame) {
+    public String[] decodeDetailed(ImageProxy frame) {
         try {
             if (frame.getFormat() != ImageFormat.YUV_420_888) {
                 return null;
             }
             List<BarcodeReader.Result> results = reader.read(frame);
             if (results != null && !results.isEmpty()) {
-                String text = results.get(0).getText();
-                return (text != null && !text.isEmpty()) ? text : null;
+                BarcodeReader.Result result = results.get(0);
+                String text = result.getText();
+                return (text != null && !text.isEmpty())
+                        ? new String[]{text, formatName(result.getFormat())} : null;
             }
             return null;
         } catch (Throwable t) {
@@ -87,22 +89,28 @@ public class ZxingCppFrameDecoder implements FrameDecoder {
     }
 
     @Override
-    public String decodeBitmap(Bitmap bitmap) {
+    public String[] decodeBitmapDetailed(Bitmap bitmap) {
         try {
             if (bitmap == null || bitmap.isRecycled()) {
                 return null;
             }
-            // Kotlin 默认参数：read(bitmap, crop=null, rotation=0)，Java 调用需显式传参
             List<BarcodeReader.Result> results = reader.read(bitmap, null, 0);
             if (results != null && !results.isEmpty()) {
-                String text = results.get(0).getText();
-                return (text != null && !text.isEmpty()) ? text : null;
+                BarcodeReader.Result result = results.get(0);
+                String text = result.getText();
+                return (text != null && !text.isEmpty())
+                        ? new String[]{text, formatName(result.getFormat())} : null;
             }
             return null;
         } catch (Throwable t) {
             Log.w(TAG, "decode bitmap failed: " + t.getMessage());
             return null;
         }
+    }
+
+    private String formatName(BarcodeReader.Format format) {
+        if (format == null) return FORMAT_UNKNOWN;
+        return format.name().replace('_', '-');
     }
 
     @Override
