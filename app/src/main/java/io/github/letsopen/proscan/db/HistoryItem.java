@@ -1,4 +1,4 @@
-package com.example.proscan.db;
+package io.github.letsopen.proscan.db;
 
 import java.util.Date;
 

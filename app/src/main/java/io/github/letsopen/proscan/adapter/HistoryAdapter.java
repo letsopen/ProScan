@@ -1,4 +1,4 @@
-package com.example.proscan.adapter;
+package io.github.letsopen.proscan.adapter;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,8 +9,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.proscan.R;
-import com.example.proscan.db.HistoryItem;
+import io.github.letsopen.proscan.R;
+import io.github.letsopen.proscan.db.HistoryItem;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

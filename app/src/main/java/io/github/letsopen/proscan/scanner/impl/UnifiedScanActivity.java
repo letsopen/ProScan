@@ -1,4 +1,4 @@
-package com.example.proscan.scanner.impl;
+package io.github.letsopen.proscan.scanner.impl;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -42,14 +42,14 @@ import androidx.lifecycle.LifecycleOwner;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.proscan.R;
-import com.example.proscan.scanner.BarcodeScanner;
-import com.example.proscan.scanner.BarcodeScannerFactory;
-import com.example.proscan.scanner.ScanCallbackHolder;
-import com.example.proscan.scanner.ScanResult;
-import com.example.proscan.scanner.decoder.FrameDecoder;
-import com.example.proscan.scanner.decoder.ZxingCppFrameDecoder;
-import com.example.proscan.view.ViewfinderView;
+import io.github.letsopen.proscan.R;
+import io.github.letsopen.proscan.scanner.BarcodeScanner;
+import io.github.letsopen.proscan.scanner.BarcodeScannerFactory;
+import io.github.letsopen.proscan.scanner.ScanCallbackHolder;
+import io.github.letsopen.proscan.scanner.ScanResult;
+import io.github.letsopen.proscan.scanner.decoder.FrameDecoder;
+import io.github.letsopen.proscan.scanner.decoder.ZxingCppFrameDecoder;
+import io.github.letsopen.proscan.view.ViewfinderView;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.barcode.BarcodeScanning;

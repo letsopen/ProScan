@@ -1,4 +1,4 @@
-package com.example.proscan.db;
+package io.github.letsopen.proscan.db;
 
 import android.content.ContentValues;
 import android.content.Context;

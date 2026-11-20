@@ -1,4 +1,4 @@
-package com.example.proscan.scanner.decoder;
+package io.github.letsopen.proscan.scanner.decoder;
 
 import android.graphics.Bitmap;
 import android.graphics.ImageFormat;

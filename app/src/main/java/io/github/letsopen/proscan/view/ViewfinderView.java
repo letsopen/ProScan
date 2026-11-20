@@ -1,4 +1,4 @@
-package com.example.proscan.view;
+package io.github.letsopen.proscan.view;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -13,7 +13,7 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
-import com.example.proscan.R;
+import io.github.letsopen.proscan.R;
 
 /**
  * iOS Camera 风格取景层：40% 炭黑蒙版、圆角镂空和琥珀黄 L 型四角。

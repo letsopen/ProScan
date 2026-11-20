@@ -1,10 +1,10 @@
-package com.example.proscan.scanner.impl;
+package io.github.letsopen.proscan.scanner.impl;
 
 import android.app.Activity;
 import android.content.Intent;
 
-import com.example.proscan.scanner.BarcodeScanner;
-import com.example.proscan.scanner.ScanCallbackHolder;
+import io.github.letsopen.proscan.scanner.BarcodeScanner;
+import io.github.letsopen.proscan.scanner.ScanCallbackHolder;
 import com.huawei.hms.api.ConnectionResult;
 import com.huawei.hms.api.HuaweiApiAvailability;
 

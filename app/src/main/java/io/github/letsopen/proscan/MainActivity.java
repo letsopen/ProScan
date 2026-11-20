@@ -1,4 +1,4 @@
-package com.example.proscan;
+package io.github.letsopen.proscan;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -18,9 +18,9 @@ import androidx.core.content.ContextCompat;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.proscan.db.HistoryDbHelper;
-import com.example.proscan.scanner.BarcodeScanner;
-import com.example.proscan.scanner.BarcodeScannerFactory;
+import io.github.letsopen.proscan.db.HistoryDbHelper;
+import io.github.letsopen.proscan.scanner.BarcodeScanner;
+import io.github.letsopen.proscan.scanner.BarcodeScannerFactory;
 
 // 生成功能仅用 zxing-core；识别由 ML Kit、HMS 和 ZXing-CPP 完成
 import com.google.zxing.BarcodeFormat;

@@ -1,10 +1,10 @@
-package com.example.proscan.scanner;
+package io.github.letsopen.proscan.scanner;
 
 import android.app.Activity;
 
-import com.example.proscan.scanner.impl.HuaweiBarcodeScanner;
-import com.example.proscan.scanner.impl.MlKitBarcodeScanner;
-import com.example.proscan.scanner.impl.ZxingCppBarcodeScanner;
+import io.github.letsopen.proscan.scanner.impl.HuaweiBarcodeScanner;
+import io.github.letsopen.proscan.scanner.impl.MlKitBarcodeScanner;
+import io.github.letsopen.proscan.scanner.impl.ZxingCppBarcodeScanner;
 
 /**
  * 扫码器工厂类

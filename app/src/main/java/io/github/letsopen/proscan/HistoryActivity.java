@@ -1,4 +1,4 @@
-package com.example.proscan;
+package io.github.letsopen.proscan;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -14,9 +14,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.proscan.adapter.HistoryAdapter;
-import com.example.proscan.db.HistoryDbHelper;
-import com.example.proscan.db.HistoryItem;
+import io.github.letsopen.proscan.adapter.HistoryAdapter;
+import io.github.letsopen.proscan.db.HistoryDbHelper;
+import io.github.letsopen.proscan.db.HistoryItem;
 
 import java.util.ArrayList;
 import java.util.List;

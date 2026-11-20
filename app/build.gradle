@@ -6,10 +6,10 @@ android {
     compileSdkVersion 34
     
     defaultConfig {
-        applicationId "com.example.proscan" // 可选：修改应用包名
+        applicationId = "io.github.letsopen.proscan"
         minSdkVersion 30  // 最低支持 Android 11
         targetSdkVersion 34
-        versionCode 31
+        versionCode 32
         versionName "3.0"  // 版本更新
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
@@ -50,7 +50,7 @@ android {
     tasks.withType(JavaCompile).configureEach {
         options.compilerArgs += ['-Xlint:deprecation']
     }
-    namespace = 'com.example.proscan'
+    namespace = 'io.github.letsopen.proscan'
 }
 
 dependencies {

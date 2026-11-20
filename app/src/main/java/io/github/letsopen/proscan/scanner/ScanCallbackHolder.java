@@ -1,4 +1,4 @@
-package com.example.proscan.scanner;
+package io.github.letsopen.proscan.scanner;
 
 /** 当前扫码会话的回调与引擎信息。由扫码页销毁时清理。 */
 public class ScanCallbackHolder {

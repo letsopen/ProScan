@@ -1,4 +1,4 @@
-package com.example.proscan.scanner;
+package io.github.letsopen.proscan.scanner;
 
 import android.app.Activity;
 
