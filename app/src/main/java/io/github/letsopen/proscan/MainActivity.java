@@ -43,8 +43,6 @@ public class MainActivity extends AppCompatActivity {
     private Button buttonPaste;
     private Button btnVisit;
     private Button buttonHistory;
-    private android.view.View textTitle;
-    private TextView textEngineLabel;
     private HistoryDbHelper dbHelper;
     private BarcodeScanner barcodeScanner;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -74,16 +72,10 @@ public class MainActivity extends AppCompatActivity {
         buttonPaste = findViewById(R.id.buttonPaste);
         btnVisit = findViewById(R.id.btnVisit);
         buttonHistory = findViewById(R.id.buttonHistory);
-        textTitle = findViewById(R.id.textTitle);
-        textEngineLabel = findViewById(R.id.text_engine_label);
 
         // 新用户、无有效偏好或上次选择已不可用时，默认 GOOGLE ML。
         syncSelectedScanner();
 
-        textTitle.setOnClickListener(v -> {
-            v.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);
-            showScannerChoiceDialog();
-        });
         applyMainInsets();
 
         buttonScan.setOnClickListener(v -> {
@@ -146,65 +138,11 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void showScannerChoiceDialog() {
-        java.util.List<BarcodeScannerFactory.ScannerType> typeList = new java.util.ArrayList<>();
-        // 仅展示当前设备支持的引擎；非华为/荣耀设备不会出现 HMS。
-        typeList.addAll(BarcodeScannerFactory.getSupportedTypes(this));
-        java.util.List<CharSequence> names = new java.util.ArrayList<>();
-        java.util.List<Boolean> availables = new java.util.ArrayList<>();
-        String currentName = barcodeScanner != null ? barcodeScanner.getName() : null;
-        int highlightColor = 0xFF1D1D1F;
-        for (int i = 0; i < typeList.size(); i++) {
-            BarcodeScanner s = BarcodeScannerFactory.createScanner(typeList.get(i));
-            boolean available = s.isAvailable(this);
-            String base = s.getName() + (available ? "" : "（不可用）");
-            android.text.SpannableString ss = new android.text.SpannableString(base);
-            if (currentName != null && currentName.equals(s.getName())) {
-                ss.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, base.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                ss.setSpan(new android.text.style.ForegroundColorSpan(highlightColor), 0, base.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
-            if (!available) {
-                ss.setSpan(new android.text.style.ForegroundColorSpan(0xFF9E9E9E), 0, base.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
-            names.add(ss);
-            availables.add(available);
-        }
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("选择解码方案");
-        android.widget.ListAdapter adapter = new android.widget.BaseAdapter() {
-            @Override public int getCount() { return names.size(); }
-            @Override public Object getItem(int position) { return names.get(position); }
-            @Override public long getItemId(int position) { return position; }
-            @Override public android.view.View getView(int position, android.view.View convertView, android.view.ViewGroup parent) {
-                android.widget.TextView tv = convertView instanceof android.widget.TextView ? (android.widget.TextView) convertView : new android.widget.TextView(MainActivity.this);
-                tv.setPadding((int)(getResources().getDisplayMetrics().density*20), (int)(getResources().getDisplayMetrics().density*12), (int)(getResources().getDisplayMetrics().density*20), (int)(getResources().getDisplayMetrics().density*12));
-                tv.setText(names.get(position));
-                tv.setEnabled(availables.get(position));
-                if (!availables.get(position)) tv.setAlpha(0.5f); else tv.setAlpha(1f);
-                return tv;
-            }
-            @Override public boolean areAllItemsEnabled() { return false; }
-            @Override public boolean isEnabled(int position) { return availables.get(position); }
-        };
-        builder.setAdapter(adapter, (dialog, which) -> {
-            BarcodeScannerFactory.ScannerType type = typeList.get(which);
-            BarcodeScanner s = BarcodeScannerFactory.createScanner(type);
-            if (!s.isAvailable(this)) {
-                Toast.makeText(this, "当前设备不可用该方案", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            saveSelectedScannerType(type);
-            barcodeScanner = s;
-            updateTitleLabel();
-            Toast.makeText(this, "已切换到：" + s.getName(), Toast.LENGTH_SHORT).show();
-        });
-        builder.show();
-    }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // 扫码页内切换也写入同一偏好；回到主界面必须显示用户最后选中的方案。
+        // 扫码页内切换仍写回同一偏好，主界面仅同步实际使用的引擎，不再展示选择器。
         syncSelectedScanner();
     }
 
@@ -217,17 +155,6 @@ public class MainActivity extends AppCompatActivity {
             saveSelectedScannerType(savedType);
         }
         barcodeScanner = candidate;
-        updateTitleLabel();
-    }
-
-    /** 引擎胶囊显示当前扫码方案，更新时使用轻量文字过渡。 */
-    private void updateTitleLabel() {
-        if (textEngineLabel == null || barcodeScanner == null) return;
-        textEngineLabel.animate().cancel();
-        textEngineLabel.setAlpha(0f);
-        textEngineLabel.setTranslationY(-3f);
-        textEngineLabel.setText(barcodeScanner.getName());
-        textEngineLabel.animate().alpha(1f).translationY(0f).setDuration(160).start();
     }
 
     private void saveSelectedScannerType(BarcodeScannerFactory.ScannerType type) {

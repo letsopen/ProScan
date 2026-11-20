@@ -49,44 +49,14 @@
             app:layout_constraintTop_toBottomOf="@id/title_main" />
 
         <LinearLayout
-            android:id="@+id/textTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:layout_marginTop="24dp"
-            android:background="@drawable/bg_engine_pill_light"
-            android:clickable="true"
-            android:contentDescription="@string/switch_engine"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="14dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/subtitle_main">
-            <TextView
-                android:id="@+id/text_engine_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:layout_marginStart="8dp"
-                android:importantForAccessibility="no"
-                android:src="@drawable/ic_chevron_down_dark" />
-        </LinearLayout>
-
-        <LinearLayout
             android:id="@+id/inputCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="24dp"
             android:background="@drawable/bg_input_card"
             android:orientation="vertical"
             android:padding="20dp"
-            app:layout_constraintTop_toBottomOf="@id/textTitle">
+            app:layout_constraintTop_toBottomOf="@id/subtitle_main">
             <TextView
                 style="@style/TextAppearance.ProScan.Caption"
                 android:layout_width="wrap_content"
@@ -102,8 +72,8 @@
                 android:gravity="top"
                 android:hint="@string/home_input_hint"
                 android:inputType="textMultiLine"
-                android:maxLines="7"
-                android:minHeight="112dp"
+                android:maxLines="9"
+                android:minHeight="176dp"
                 android:scrollbars="vertical"
                 android:textColorHint="@color/text_tertiary"
                 android:textSize="17sp" />
