@@ -26,6 +26,7 @@ public class ViewfinderView extends View {
     private final Paint cornerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF frameRect = new RectF();
     private final Path cornerPath = new Path();
+    private volatile boolean frameReady;
     private float cornerLength;
     private float cornerRadius;
 
@@ -49,6 +50,7 @@ public class ViewfinderView extends View {
 
     /** 返回相对本 View 的取景区域，供提示文字和可访问性布局使用。 */
     public RectF getFrameRect() { return new RectF(frameRect); }
+    public boolean isFrameReady() { return frameReady; }
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -61,6 +63,7 @@ public class ViewfinderView extends View {
         // 略高于视觉中心，为底部操作坞与提示文字留出呼吸空间
         float top = (height - frameHeight) * 0.43f;
         frameRect.set(left, top, left + frameWidth, top + frameHeight);
+        frameReady = true;
 
         int layer = canvas.saveLayer(0, 0, width, height, null);
         canvas.drawColor(getResources().getColor(R.color.camera_scrim, getContext().getTheme()));

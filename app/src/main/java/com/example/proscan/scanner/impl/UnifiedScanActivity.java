@@ -270,6 +270,11 @@ public class UnifiedScanActivity extends AppCompatActivity {
 
     private void analyze(@NonNull ImageProxy image) {
         if (!active || readingPhoto) { image.close(); return; }
+        // 取景框尚未完成测量时暂不分析，避免偶尔退回全帧识别。
+        if (!viewfinderView.isFrameReady() || previewView.getWidth() == 0 || previewView.getHeight() == 0) {
+            image.close();
+            return;
+        }
         if (processing) { image.close(); return; }
         processing = true;
         int generation = decoderGeneration;
@@ -286,6 +291,8 @@ public class UnifiedScanActivity extends AppCompatActivity {
 
     private void processWithFrameDecoder(ImageProxy image, int generation) {
         try {
+            // ZXing-CPP 的 JNI 直接读取 ImageProxy.cropRect，不复制、不转 Bitmap。
+            image.setCropRect(sensorCropRect(image));
             String[] result = frameDecoder.decodeDetailed(image);
             if (result != null && active && generation == decoderGeneration) {
                 onDecodeCandidate(result[0], result[1], generation);
@@ -325,60 +332,149 @@ public class UnifiedScanActivity extends AppCompatActivity {
 
     @OptIn(markerClass = androidx.camera.core.ExperimentalGetImage.class)
     private void processMlkit(ImageProxy image, int generation) {
-        InputImage inputImage = InputImage.fromMediaImage(image.getImage(),
-                image.getImageInfo().getRotationDegrees());
-        mlkitScanner.process(inputImage).addOnSuccessListener(barcodes -> {
+        // 输入位图按取景框裁剪并转正；ML Kit 此时接收 0 度位图，不再自行旋转整帧。
+        Bitmap cropped = cropFrameToBitmap(image);
+        if (cropped == null) {
+            processing = false;
+            image.close();
+            return;
+        }
+        mlkitScanner.process(InputImage.fromBitmap(cropped, 0)).addOnSuccessListener(barcodes -> {
             if (!barcodes.isEmpty() && active && generation == decoderGeneration) {
                 Barcode barcode = barcodes.get(0);
                 String value = barcode.getRawValue();
                 if (value != null) onDecodeCandidate(value, mlKitFormat(barcode.getFormat()), generation);
             }
         }).addOnFailureListener(e -> { }).addOnCompleteListener(task -> {
+            cropped.recycle();
             processing = false;
             image.close();
         });
     }
 
     private void processHuaweiFrame(ImageProxy image, int generation) {
-        boolean handled = false;
+        Bitmap cropped = null;
         try {
-            if (image.getFormat() == ImageFormat.YUV_420_888 && image.getPlanes().length >= 3) {
-                byte[] nv21 = yuv420ToNv21(image);
-                MLFrame frame = new MLFrame.Creator().writeByteBufferData(ByteBuffer.wrap(nv21),
-                        image.getWidth(), image.getHeight(), ImageFormat.NV21)
-                        .setQuadrant(image.getImageInfo().getRotationDegrees() / 90).create();
-                android.util.SparseArray<HmsScan> scans = hmsAnalyzer.analyseFrame(frame);
-                if (scans != null && scans.size() > 0 && active && generation == decoderGeneration) {
-                    HmsScan scan = scans.valueAt(0);
-                    String value = scan.getOriginalValue();
-                    if (value != null) {
-                        handled = true;
-                        onDecodeCandidate(value, hmsFormat(scan.getScanTypeForm()), generation);
+            cropped = cropFrameToBitmap(image);
+            if (cropped != null) {
+                boolean handled = false;
+                try {
+                    // 主路径和 Bitmap 回退共用同一帧、同一裁剪区域，杜绝回退扫到框外。
+                    MLFrame frame = MLFrame.fromBitmap(cropped);
+                    android.util.SparseArray<HmsScan> scans = hmsAnalyzer.analyseFrame(frame);
+                    if (scans != null && scans.size() > 0 && active && generation == decoderGeneration) {
+                        HmsScan scan = scans.valueAt(0);
+                        String value = scan.getOriginalValue();
+                        if (value != null) {
+                            handled = true;
+                            onDecodeCandidate(value, hmsFormat(scan.getScanTypeForm()), generation);
+                        }
                     }
+                } catch (Throwable t) {
+                    android.util.Log.w(TAG, "HMS analyzer frame failed: " + t);
                 }
-            }
-        } catch (Throwable t) {
-            android.util.Log.w(TAG, "HMS analyzer frame failed: " + t);
-        }
-        if (!handled && active && generation == decoderGeneration) {
-            try {
-                Bitmap bitmap = toBitmap(image);
-                if (bitmap != null) {
-                    HmsScan[] scans = ScanUtil.decodeWithBitmap(getApplicationContext(), bitmap,
+                if (!handled && active && generation == decoderGeneration) {
+                    HmsScan[] scans = ScanUtil.decodeWithBitmap(getApplicationContext(), cropped,
                             new HmsScanAnalyzerOptions.Creator().setHmsScanTypes(HmsScan.ALL_SCAN_TYPE)
                                     .setPhotoMode(false).setParseResult(true).create());
                     if (scans != null && scans.length > 0 && active && generation == decoderGeneration) {
                         onDecodeCandidate(scans[0].getOriginalValue(),
                                 hmsFormat(scans[0].getScanTypeForm()), generation);
                     }
-                    bitmap.recycle();
                 }
-            } catch (Throwable t) {
-                android.util.Log.w(TAG, "HMS bitmap fallback failed: " + t);
             }
+        } catch (Throwable t) {
+            android.util.Log.w(TAG, "HMS bitmap fallback failed: " + t);
+        } finally {
+            if (cropped != null) cropped.recycle();
+            processing = false;
+            image.close();
         }
-        processing = false;
-        image.close();
+    }
+
+    /**
+     * 将屏幕上的取景框映射到图像缓冲区。
+     * 输入 viewWidth/viewHeight 为预览的可见区域，frame 为其中的可见取景框；
+     * imageWidth/imageHeight 使用旋转后的缓冲区方向，返回传感器原始方向裁剪区域。
+     * PreviewView 默认 FILL_CENTER（中央裁剪），其内部预览缓冲尺寸与显示尺寸可能不同。
+     */
+    static Rect mapFrameToSensorRect(android.graphics.RectF frame,
+                                     float viewWidth, float viewHeight,
+                                     int bufferWidth, int bufferHeight, int rotationDegrees) {
+        float rotatedWidth = rotationDegrees % 180 == 0 ? bufferWidth : bufferHeight;
+        float rotatedHeight = rotationDegrees % 180 == 0 ? bufferHeight : bufferWidth;
+        float scale = Math.max(viewWidth / rotatedWidth, viewHeight / rotatedHeight);
+        float offsetX = (rotatedWidth * scale - viewWidth) / 2f;
+        float offsetY = (rotatedHeight * scale - viewHeight) / 2f;
+        // 4% 余量仅避免贴边截断，仍严格限制在取景框附近。
+        float paddingX = frame.width() * 0.04f;
+        float paddingY = frame.height() * 0.04f;
+        float rx = (frame.left - paddingX + offsetX) / scale;
+        float ry = (frame.top - paddingY + offsetY) / scale;
+        float rw = (frame.width() + paddingX * 2) / scale;
+        float rh = (frame.height() + paddingY * 2) / scale;
+        int left;
+        int top;
+        int right;
+        int bottom;
+        if (rotationDegrees == 90) {
+            left = Math.round(ry);
+            top = Math.round(bufferHeight - rx - rw);
+            right = Math.round(ry + rh);
+            bottom = Math.round(bufferHeight - rx);
+        } else if (rotationDegrees == 180) {
+            left = Math.round(bufferWidth - rx - rw);
+            top = Math.round(bufferHeight - ry - rh);
+            right = Math.round(bufferWidth - rx);
+            bottom = Math.round(bufferHeight - ry);
+        } else if (rotationDegrees == 270) {
+            left = Math.round(bufferWidth - ry - rh);
+            top = Math.round(rx);
+            right = Math.round(bufferWidth - ry);
+            bottom = Math.round(rx + rw);
+        } else {
+            left = Math.round(rx);
+            top = Math.round(ry);
+            right = Math.round(rx + rw);
+            bottom = Math.round(ry + rh);
+        }
+        left = Math.max(0, left) & ~1;
+        top = Math.max(0, top) & ~1;
+        right = Math.min(bufferWidth, right) & ~1;
+        bottom = Math.min(bufferHeight, bottom) & ~1;
+        if (right - left < 2 || bottom - top < 2) return new Rect(0, 0, bufferWidth, bufferHeight);
+        return new Rect(left, top, right, bottom);
+    }
+
+    private Rect sensorCropRect(ImageProxy image) {
+        return mapFrameToSensorRect(viewfinderView.getFrameRect(), previewView.getWidth(), previewView.getHeight(),
+                image.getWidth(), image.getHeight(), image.getImageInfo().getRotationDegrees());
+    }
+
+    /** 仅将取景框内区域转换为正向 Bitmap，供 ML Kit 与 HMS 使用。 */
+    @OptIn(markerClass = androidx.camera.core.ExperimentalGetImage.class)
+    private Bitmap cropFrameToBitmap(ImageProxy image) {
+        try {
+            Rect crop = sensorCropRect(image);
+            image.setCropRect(crop);
+            byte[] nv21 = yuv420ToNv21(image);
+            YuvImage yuv = new YuvImage(nv21, ImageFormat.NV21, crop.width(), crop.height(), null);
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            yuv.compressToJpeg(new Rect(0, 0, crop.width(), crop.height()), 90, output);
+            Bitmap bitmap = android.graphics.BitmapFactory.decodeByteArray(output.toByteArray(), 0, output.size());
+            int rotation = image.getImageInfo().getRotationDegrees();
+            if (rotation != 0) {
+                android.graphics.Matrix matrix = new android.graphics.Matrix();
+                matrix.postRotate(rotation);
+                Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                if (rotated != bitmap) bitmap.recycle();
+                bitmap = rotated;
+            }
+            return bitmap;
+        } catch (Throwable t) {
+            android.util.Log.w(TAG, "Viewfinder crop failed: " + t);
+            return null;
+        }
     }
 
     private void createDecoder() {
