@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">ProScan</string>
-    <string name="home_title">ProScan</string>
+    <string name="home_title">Pro Scan</string>
     <string name="home_subtitle">扫描、生成，一切从容。</string>
     <string name="home_input_label">内容</string>
     <string name="home_input_hint">输入文本或链接，也可以直接扫描</string>

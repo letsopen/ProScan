@@ -35,7 +35,8 @@
             android:text="@string/history_title"
             android:textSize="14sp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="@id/title_main"
+            app:layout_constraintBottom_toBottomOf="@id/title_main" />
 
         <TextView
             android:id="@+id/subtitle_main"

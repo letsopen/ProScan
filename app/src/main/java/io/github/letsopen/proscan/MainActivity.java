@@ -395,9 +395,13 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "二维码内容过长，请控制在3000字符以内", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (type == CodeType.BARCODE && !content.matches("^[\\x00-\\x7F]+$")) {
-            Toast.makeText(this, "条形码内容只能包含ASCII字符", Toast.LENGTH_SHORT).show();
-            return;
+        if (type == CodeType.BARCODE) {
+            String validationError = io.github.letsopen.proscan.generator.BarcodeInputValidator
+                    .validate(content, "CODE128");
+            if (validationError != null) {
+                Toast.makeText(this, validationError, Toast.LENGTH_LONG).show();
+                return;
+            }
         }
         Intent intent = new Intent(this, CodeGeneratorActivity.class);
         intent.putExtra(CodeGeneratorActivity.EXTRA_CONTENT, content);

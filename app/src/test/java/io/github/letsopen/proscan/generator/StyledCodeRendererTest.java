@@ -52,6 +52,43 @@ public class StyledCodeRendererTest {
     }
 
     @Test
+    public void barcodeValidationUsesChineseRules() {
+        assertEquals(null, BarcodeInputValidator.validate("ABC-123 xyz", "CODE128"));
+        assertEquals(null, BarcodeInputValidator.validate("https://git.io/ProScan", "CODE128"));
+        assertEquals(null, BarcodeInputValidator.validate("590123412345", "EAN13"));
+        assertEquals(null, BarcodeInputValidator.validate("5901234123457", "EAN13"));
+        org.junit.Assert.assertTrue(BarcodeInputValidator.validate("中文", "CODE128").contains("不能包含中文"));
+        org.junit.Assert.assertTrue(BarcodeInputValidator.validate("ABC\n123", "CODE128").contains("换行"));
+        org.junit.Assert.assertTrue(BarcodeInputValidator.validate("abc", "EAN13").contains("仅支持数字"));
+        org.junit.Assert.assertTrue(BarcodeInputValidator.validate("5901234123456", "EAN13").contains("校验位"));
+        org.junit.Assert.assertTrue(BarcodeInputValidator.validate("123", "EAN13").contains("12 位"));
+    }
+
+    @Test
+    public void longUrlRejectedBeforeRendering() {
+        String url = "https://github.com/letsopen/ProScan?query=" +
+                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        String error = BarcodeInputValidator.validate(url, "CODE128");
+        org.junit.Assert.assertNotNull(error);
+        org.junit.Assert.assertTrue(error.contains("内容过长"));
+        org.junit.Assert.assertTrue(error.contains("二维码"));
+    }
+
+    @Test
+    public void longestCode128StillRoundTrips() throws Exception {
+        for (int length = 20; length <= BarcodeInputValidator.CODE128_MAX_LENGTH; length += 6) {
+        StringBuilder text = new StringBuilder();
+        while (text.length() < length) text.append("PS2026");
+        String content = text.substring(0, length);
+        assertEquals(null, BarcodeInputValidator.validate(content, "CODE128"));
+        Bitmap bitmap = StyledBarcodeRenderer.render(CodeMatrixEncoder.encodeBarcode(content, "CODE128"),
+                CodeStyleConfig.barcode(BarcodeStyle.CLASSIC, "CODE128"), 1200, 600, content);
+        assertEquals(content, decode(bitmap, BarcodeFormat.CODE_128));
+        bitmap.recycle();
+        }
+    }
+
+    @Test
     public void code128RoundTrip() throws Exception {
         String content = "PROSCAN-2026";
         Bitmap bitmap = StyledBarcodeRenderer.render(CodeMatrixEncoder.encodeBarcode(content, "CODE128"),

@@ -116,10 +116,13 @@ public class CodeGeneratorActivity extends AppCompatActivity {
     }
 
     private void regenerate() {
-        if (type == CodeType.BARCODE && "EAN13".equals(barcodeFormat)
-                && !(content.matches("^\\d{12}$") || content.matches("^\\d{13}$"))) {
-            Toast.makeText(this, "EAN-13 需输入 12 或 13 位数字", Toast.LENGTH_LONG).show();
+        String validationError = type == CodeType.BARCODE ? BarcodeInputValidator.validate(content, barcodeFormat) : null;
+        if (validationError != null) {
+            generation++;
+            showInputError(validationError);
+            return;
         }
+        hideInputError();
         int request = ++generation;
         refreshStyleSelection();
         progress.setVisibility(View.VISIBLE);
@@ -136,7 +139,10 @@ public class CodeGeneratorActivity extends AppCompatActivity {
                     result = StyledBarcodeRenderer.render(CodeMatrixEncoder.encodeBarcode(content, barcodeFormat),
                             config, CodeStyleConfig.BARCODE_EXPORT_WIDTH, CodeStyleConfig.BARCODE_EXPORT_HEIGHT, content);
                 }
-            } catch (Exception e) { error = e; }
+            } catch (Exception e) {
+                error = type == CodeType.BARCODE
+                        ? new IllegalArgumentException("当前内容无法生成条码，请检查输入格式") : e;
+            }
             Bitmap finalResult = result;
             Exception finalError = error;
             runOnUiThread(() -> {
@@ -159,6 +165,20 @@ public class CodeGeneratorActivity extends AppCompatActivity {
         });
     }
 
+    private void showInputError(String message) {
+        progress.setVisibility(View.GONE);
+        TextView caption = findViewById(R.id.generator_caption);
+        caption.setText(message);
+        caption.setTextColor(getColor(R.color.danger));
+        setExportEnabled(false);
+    }
+
+    private void hideInputError() {
+        TextView caption = findViewById(R.id.generator_caption);
+        caption.setText("预览与导出使用同一高清渲染，白底静区确保可扫。");
+        caption.setTextColor(getColor(R.color.text_secondary));
+    }
+
     private void setExportEnabled(boolean enabled) {
         findViewById(R.id.button_save_image).setEnabled(enabled && !exporting);
         findViewById(R.id.button_share_image).setEnabled(enabled && !exporting);
@@ -176,7 +196,10 @@ public class CodeGeneratorActivity extends AppCompatActivity {
             try {
                 if (save) CodeImageExporter.saveToGallery(this, bitmap, name);
                 else CodeImageExporter.share(this, bitmap, name);
-            } catch (Exception e) { error = e; }
+            } catch (Exception e) {
+                error = type == CodeType.BARCODE
+                        ? new IllegalArgumentException("当前内容无法生成条码，请检查输入格式") : e;
+            }
             finally { bitmap.recycle(); }
             Exception finalError = error;
             runOnUiThread(() -> {
