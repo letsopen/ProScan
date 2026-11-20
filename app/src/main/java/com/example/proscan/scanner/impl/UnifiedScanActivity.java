@@ -12,7 +12,6 @@ import android.os.Vibrator;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowInsetsController;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -107,13 +106,13 @@ public class UnifiedScanActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-        WindowInsetsController controller = getWindow().getInsetsController();
-        if (controller != null) {
-            controller.setSystemBarsAppearance(0,
-                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-                            | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
-        }
         setContentView(R.layout.activity_mlkit_scan);
+        // 必须在 setContentView 后访问 WindowInsetsController：
+        // 部分华为 ROM 在 DecorView 创建前调用 Window.getInsetsController 会触发 NPE。
+        androidx.core.view.WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
         previewView = findViewById(R.id.preview_view);
         viewfinderView = findViewById(R.id.viewfinder_view);
         flashButton = findViewById(R.id.button_flash);
